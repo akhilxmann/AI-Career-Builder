@@ -1,3 +1,5 @@
 streamlit
 stripe
 fpdf
+Pillow
+streamlit-lottie
