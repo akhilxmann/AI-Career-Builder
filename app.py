@@ -1,12 +1,10 @@
+ import os
 import streamlit as st
 import stripe
 from fpdf import FPDF
 import base64
 
-# === CONFIG ===
-stripe.api_key =  'sk_live_51RT8yfGRCFNpMv7Gc16LMiCKqHA\Kt6PcCqP1U5
-7QUjzrir7i0AM7uiyIKCc9YQQNvrjPPqdLft5L9Y36q9qt89
-t00hFa0Uzdf'  
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')  
 
 PRICE_IDS = {
     "Daily": "price_daily_$10,        
