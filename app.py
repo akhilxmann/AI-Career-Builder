@@ -1,16 +1,17 @@
- import os
+import os
 import streamlit as st
 import stripe
 from fpdf import FPDF
 import base64
 
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY')  
+# === CONFIG ===
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')  # Set this in your Streamlit/hosting env!
 
 PRICE_IDS = {
-    "Daily": "price_daily_$10,        
-    "Weekly": "price_weekly_$”20,
-    "Monthly": "price_monthly_$”50,
-    "Lifetime": "price_lifetime_450”
+    "Daily": "price_daily_xxxxxx",        # REPLACE with real Stripe Price ID
+    "Weekly": "price_weekly_xxxxxx",
+    "Monthly": "price_monthly_xxxxxx",
+    "Lifetime": "price_lifetime_xxxxxx"
 }
 
 APP_NAME = "AI Career Builder Ultimate"
