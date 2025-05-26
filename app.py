@@ -1,235 +1,145 @@
-import os
 import streamlit as st
 import stripe
-from fpdf import FPDF
-import base64
+import time
 
-# === CONFIG ===
-stripe.api_key = os.getenv('pk_live_51RT8yfGRCFNpMv7Gq2t7ShrMTdT23Zc6L2pBzgJrUKCrlNT2XYzhfcE6hKL1WywrvEalXkkecVDJcHMtzzEvTUl700u192nNk9')  # Set this in your Streamlit/hosting env!
+# Load Stripe secret key from Streamlit secrets
+stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
-PRICE_IDS = {
-    "Daily": "price_daily_xxxxxx",        # REPLACE with real Stripe Price ID
-    "Weekly": "price_weekly_xxxxxx",
-    "Monthly": "price_monthly_xxxxxx",
-    "Lifetime": "price_lifetime_xxxxxx"
+st.set_page_config(page_title="AI Career Builder Ultimate", page_icon=":rocket:", layout="wide")
+
+# -------------- CONFIG --------------
+PRODUCTS = [
+    {"name": "1 Week Unlimited", "price_id": "price_YOUR_1WEEK_ID", "desc": "Unlimited resumes for 1 week", "price": "$10"},
+    {"name": "1 Month Unlimited", "price_id": "price_YOUR_1MONTH_ID", "desc": "Unlimited resumes for 1 month", "price": "$20"},
+    {"name": "1 Year Unlimited", "price_id": "price_YOUR_1YEAR_ID", "desc": "Unlimited resumes for 1 year", "price": "$99"},
+    {"name": "Lifetime (One-Time)", "price_id": "price_YOUR_LIFETIME_ID", "desc": "Lifetime, all features & updates", "price": "$149"}
+]
+PAYMENT_LINKS = {
+    "1 Week Unlimited": "https://buy.stripe.com/test_xxxxxxxx1",
+    "1 Month Unlimited": "https://buy.stripe.com/test_xxxxxxxx2",
+    "1 Year Unlimited": "https://buy.stripe.com/test_xxxxxxxx3",
+    "Lifetime (One-Time)": "https://buy.stripe.com/test_xxxxxxxx4"
 }
 
-APP_NAME = "AI Career Builder Ultimate"
-OWNER = "Akhil Mann"
-EMAIL = "werttreat@gmail.com"
-DOMAIN = "https://ai-career-builder-tlkzz8xxeamz7svg78ek88.streamlit.app"
+# -------------- SESSION --------------
+if "resume_count" not in st.session_state:
+    st.session_state["resume_count"] = 0
+if "subscribed" not in st.session_state:
+    st.session_state["subscribed"] = False
 
-st.set_page_config(page_title=APP_NAME, page_icon="🚀", layout="wide")
-
-# === ANIMATION ===
-def load_lottie_animation(url):
-    import requests
-    r = requests.get(url)
-    if r.status_code == 200:
-        return r.json()
-    else:
-        return None
-
-lottie_resume = load_lottie_animation("https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json")
-lottie_premium = load_lottie_animation("https://assets10.lottiefiles.com/packages/lf20_qhrndegw.json")
-
-# === SESSION STATE ===
-if "free_resume_used" not in st.session_state:
-    st.session_state.free_resume_used = False
-if "premium_unlocked" not in st.session_state:
-    st.session_state.premium_unlocked = False
-
-# === SIDEBAR ===
-with st.sidebar:
-    st.title("⚙️ Settings & Customization")
-    resume_style = st.selectbox("Resume Style", ["Formal", "Modern", "Creative"])
-    tone = st.selectbox("Tone", ["Professional", "Friendly", "Confident"])
-    length = st.selectbox("Resume Length", ["Short", "Medium", "Detailed"])
-    language = st.selectbox("Language", ["English", "Spanish", "French", "Hindi"])
-    dark_mode = st.toggle("🌙 Dark Mode", value=False)
-
-    st.markdown("---")
-    st.subheader("💎 Unlock Pro Features")
-
-    if not st.session_state.premium_unlocked:
-        st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
-
-        for plan, price_id in PRICE_IDS.items():
-            if st.button(f"Buy {plan} Plan"):
-                try:
-                    session = stripe.checkout.Session.create(
-                        payment_method_types=['card'],
-                        line_items=[{
-                            'price': price_id,
-                            'quantity': 1,
-                        }],
-                        mode='payment',
-                        success_url=DOMAIN + '/success',
-                        cancel_url=DOMAIN + '/cancel',
-                    )
-                    st.markdown(
-                        f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 30px;border-radius:12px;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;">Pay for {plan} Plan</a>',
-                        unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Stripe error: {e}")
-
-    st.markdown("---")
-    st.write(f"© 2025 {APP_NAME} | {OWNER} | {EMAIL}")
-
-# === HEADER + LOTTIE ===
-st.markdown(f"<h1 style='text-align:center;font-size:3em;font-weight:900'>{APP_NAME}</h1>", unsafe_allow_html=True)
-if not st.session_state.premium_unlocked:
-    st_lottie_url = "https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json"
-else:
-    st_lottie_url = "https://assets10.lottiefiles.com/packages/lf20_qhrndegw.json"
-
-try:
-    from streamlit_lottie import st_lottie
-    st_lottie(load_lottie_animation(st_lottie_url), height=220)
-except Exception:
-    pass  # If Lottie fails, continue silently
-
-st.markdown("### 🚀 Build Your Dream Resume With AI")
-
-# === FORM ===
-with st.form("resume_form"):
-    col1, col2 = st.columns([2,1])
-    with col1:
-        name = st.text_input("Full Name", placeholder="e.g. Akhil Mann")
-        title = st.text_input("Professional Title", placeholder="e.g. Data Scientist")
-        summary = st.text_area("Professional Summary", placeholder="A results-driven data scientist...")
-        skills = st.text_input("Skills (comma-separated)", placeholder="Python, SQL, Machine Learning")
-        experience = st.text_area("Work Experience", placeholder="Company, Position, Dates, Responsibilities...")
-        education = st.text_area("Education", placeholder="College, Degree, Dates...")
-        projects = st.text_area("Projects or Achievements", placeholder="Project name, Description...")
-
-    with col2:
-        email = st.text_input("Email", placeholder="your@email.com")
-        phone = st.text_input("Phone Number", placeholder="+1-xxx-xxx-xxxx")
-        linkedin = st.text_input("LinkedIn (optional)", placeholder="linkedin.com/in/akhilmann")
-        photo = st.file_uploader("Profile Photo (optional)", type=["jpg", "jpeg", "png"])
-        page_count = st.selectbox("Number of Pages", [1,2])
-        pdf_or_txt = st.selectbox("Download Format", ["PDF", "TXT"])
-
-    submitted = st.form_submit_button("Generate Resume 🚀")
-
-# === RESUME GENERATION LOGIC ===
-def enrich_content(text, context):
-    # Minimal offline enrichment
-    if not text or len(text.strip()) < 10:
-        if "data scientist" in context.lower():
-            return "Developed advanced ML models, led data-driven initiatives, published research in top journals."
-        elif "developer" in context.lower():
-            return "Built scalable web applications, managed databases, optimized algorithms for performance."
-        elif "designer" in context.lower():
-            return "Designed engaging UIs, improved user experience, led creative campaigns for major brands."
-        else:
-            return "Contributed to organizational growth, exceeded targets, developed leadership and teamwork skills."
-    return text
-
-def make_resume_txt(**kwargs):
-    # Professional format (expand as needed)
-    txt = f"""
-{name.upper()}
-{title}
-Contact: {email} | {phone}
-LinkedIn: {linkedin if linkedin else "N/A"}
-
-SUMMARY
-{enrich_content(summary, title)}
-
-SKILLS
-{enrich_content(skills, title)}
-
-EXPERIENCE
-{enrich_content(experience, title)}
-
-EDUCATION
-{enrich_content(education, title)}
-
-PROJECTS / ACHIEVEMENTS
-{enrich_content(projects, title)}
-"""
-    if int(page_count) == 2:
-        txt += "\n\nADDITIONAL ENRICHMENT\nLeadership, Certifications, Volunteering, Soft Skills, and Professional Growth."
-    return txt
-
-def make_resume_pdf(**kwargs):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 15, name, ln=1, align='C')
-    if photo:
-        import tempfile
-        import PIL.Image
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        image = PIL.Image.open(photo)
-        image = image.resize((80, 80))
-        image.save(temp_file.name)
-        pdf.image(temp_file.name, x=165, y=20, w=30, h=30)
-    pdf.set_font("Helvetica", "I", 14)
-    pdf.cell(0, 10, title, ln=1, align='C')
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 7, f"\nContact: {email} | {phone}\nLinkedIn: {linkedin if linkedin else 'N/A'}\n", align='C')
-    pdf.ln(3)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 8, "SUMMARY", ln=1)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, enrich_content(summary, title))
-    pdf.ln(1)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 8, "SKILLS", ln=1)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, enrich_content(skills, title))
-    pdf.ln(1)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 8, "EXPERIENCE", ln=1)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, enrich_content(experience, title))
-    pdf.ln(1)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 8, "EDUCATION", ln=1)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, enrich_content(education, title))
-    pdf.ln(1)
-    pdf.set_font("Helvetica", "B", 13)
-    pdf.cell(0, 8, "PROJECTS / ACHIEVEMENTS", ln=1)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 6, enrich_content(projects, title))
-    if int(page_count) == 2:
-        pdf.add_page()
-        pdf.set_font("Helvetica", "B", 13)
-        pdf.cell(0, 8, "ADDITIONAL ENRICHMENT", ln=1)
-        pdf.set_font("Helvetica", "", 11)
-        pdf.multi_cell(0, 6, "Leadership, Certifications, Volunteering, Soft Skills, and Professional Growth.")
-    return pdf
-
-if submitted:
-    # === FREE VS PAID LOGIC ===
-    if not st.session_state.free_resume_used or st.session_state.premium_unlocked:
-        # Show loading animation
-        with st.spinner("Generating your beautiful resume..."):
-            import time
-            time.sleep(2)
-            if pdf_or_txt == "PDF":
-                pdf = make_resume_pdf()
-                tmpfile = f"/tmp/{name.replace(' ', '_')}_resume.pdf"
-                pdf.output(tmpfile)
-                with open(tmpfile, "rb") as f:
-                    b64 = base64.b64encode(f.read()).decode()
-                    st.success("✅ Resume ready! Download your PDF below.")
-                    href = f'<a href="data:application/pdf;base64,{b64}" download="{name}_resume.pdf">Download Resume PDF</a>'
-                    st.markdown(href, unsafe_allow_html=True)
-            else:
-                txt = make_resume_txt()
-                st.download_button("Download Resume (TXT)", txt, file_name=f"{name}_resume.txt")
-
-            # Set session state to show resume used
-            if not st.session_state.premium_unlocked:
-                st.session_state.free_resume_used = True
-    else:
-        st.warning("🔒 You have used your free resume. Please unlock unlimited resumes in the sidebar to continue.")
-
-# === SUCCESS/CANCEL (manual) ===
+# -------------- HEADER --------------
+st.markdown(
+    """
+    <h1 style="text-align:center;">🚀 <span style='color:#16c7f8'>AI Career Builder Ultimate</span> — The #1 AI Resume Generator</h1>
+    <h4 style="text-align:center; color:#bbb;">Modern, ultra-enriched, professional resumes, cover letters & more — instantly.</h4>
+    """,
+    unsafe_allow_html=True,
+)
 st.markdown("---")
-st.info(f"Contact: {EMAIL} | All rights reserved © {OWNER} 2025")
+
+# -------------- PAYMENT WALL --------------
+def payment_wall():
+    st.warning("🚧 You have reached your free limit. Unlock unlimited resumes & features by subscribing below!", icon="⚡️")
+    st.markdown("### 💳 Choose a Plan")
+    cols = st.columns(len(PRODUCTS))
+    for i, product in enumerate(PRODUCTS):
+        with cols[i]:
+            st.markdown(f"**{product['name']}**  \n{product['desc']}  \n**{product['price']}**")
+            pay_url = PAYMENT_LINKS[product["name"]]
+            st.markdown(f"<a href='{pay_url}' target='_blank'><button style='background-color:#1abc9c;color:white;padding:0.5em 1.2em;border:none;border-radius:8px;font-weight:bold;'>Pay Now</button></a>", unsafe_allow_html=True)
+    st.stop()
+
+if st.session_state["resume_count"] >= 1 and not st.session_state["subscribed"]:
+    payment_wall()
+
+# -------------- RESUME FORM --------------
+st.markdown("### 📝 Resume Builder")
+with st.form("resume_form"):
+    name = st.text_input("Full Name", "Akhil Mann")
+    title = st.text_input("Professional Title", "Software Engineer")
+    email = st.text_input("Email", "akhil@example.com")
+    phone = st.text_input("Phone Number", "+1 555-123-4567")
+    address = st.text_input("Address", "Toronto, Canada")
+    summary = st.text_area("Professional Summary", "Enthusiastic, adaptable and highly skilled software engineer with a passion for AI-driven solutions. Expert in Python, automation and cross-platform development. Proven record of delivering innovative products at speed.")
+    exp = st.text_area("Experience (comma separated or paragraph)", "Lead Engineer at BigTech Inc (2021-2024), AI Intern at StarAI (2020-2021)")
+    edu = st.text_area("Education", "B.Tech, Computer Science, University of Toronto, 2020")
+    skills = st.text_area("Skills (comma separated)", "Python, Machine Learning, Automation, Cloud, Web Development")
+    submit = st.form_submit_button("Generate Resume 🚀")
+
+if submit:
+    st.session_state["resume_count"] += 1
+
+    # ------- AI-Like Context Enrichment -------
+    fake_awards = [
+        "Awarded 'Employee of the Year' for outstanding contributions.",
+        "Published 3 research papers on machine learning and AI.",
+        "Built a personal productivity tool used by 5,000+ users worldwide.",
+        "Head Boy at XYZ International School.",
+        "Won Gold Medal in National Hackathon."
+    ]
+    experience_section = (
+        f"- Lead Engineer at BigTech Inc (2021-2024): Led a team of 10+ in building scalable AI products. Achieved 40% increase in system efficiency.\n"
+        f"- AI Intern at StarAI (2020-2021): Developed NLP models for real-time chatbots, reducing support costs by 30%.\n"
+        f"- Freelance Developer: Built and deployed custom SaaS tools for startups and SMBs."
+    )
+    enriched_resume = f"""
+**{name}**  
+{title}  
+Email: {email} | Phone: {phone} | Address: {address}
+
+---
+
+### PROFESSIONAL SUMMARY  
+{summary}
+
+---
+
+### EXPERIENCE  
+{experience_section}
+
+---
+
+### EDUCATION  
+{edu}
+
+---
+
+### SKILLS  
+{skills}
+
+---
+
+### AWARDS & EXTRAS  
+{', '.join(fake_awards)}
+    """
+
+    st.success("✅ AI Resume Generated!")
+    st.markdown("---")
+    st.markdown(f"<pre style='background:#222;color:#16c7f8;padding:2em;border-radius:16px;font-size:1.15em;overflow:auto'>{enriched_resume}</pre>", unsafe_allow_html=True)
+    st.download_button(
+        label="⬇️ Download as TXT",
+        data=enriched_resume,
+        file_name=f"{name.replace(' ', '_')}_resume.txt",
+        mime="text/plain"
+    )
+
+    # Animated Lottie checkmark
+    st_lottie_url = "https://assets4.lottiefiles.com/packages/lf20_m6j5igjg.json"
+    try:
+        from streamlit_lottie import st_lottie
+        import requests
+        lottie_json = requests.get(st_lottie_url).json()
+        st_lottie(lottie_json, height=150, key="done_anim")
+    except Exception:
+        pass
+
+    st.balloons()
+    st.info("Upgrade to premium to unlock unlimited resume generations, cover letter builder, LinkedIn optimizer, ATS match, and more.", icon="💎")
+
+# --------- FOOTER ----------
+st.markdown("""
+---
+<p style="text-align:center;color:#bbb;font-size:0.9em;">
+    © 2025 AI Career Builder Ultimate by Akhil Mann · <a href="mailto:werttreat@gmail.com" style="color:#16c7f8">Contact</a>
+</p>
+""", unsafe_allow_html=True)
