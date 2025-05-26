@@ -1,354 +1,98 @@
 import streamlit as st
-from datetime import datetime
-from streamlit_option_menu import option_menu
-from streamlit_lottie import st_lottie
-import unicodedata, random, io
-from fpdf import FPDF
-import qrcode
-from PIL import Image
-import requests
+import stripe
+import os
 
-# --- App Config ---
-st.set_page_config(page_title="🔥 AI Career Builder Ultimate", page_icon="🚀", layout="wide")
-current_year = datetime.now().year
+# Stripe secret key (replace with your real key)
+stripe.api_key = 'sk_live_your_secret_key_here'
 
-# --- Lottie Animation ---
-def load_lottie(url):
-    r = requests.get(url)
-    if r.status_code == 200:
-        return r.json()
-    return {}
+# Track free resume generation
+if 'free_used' not in st.session_state:
+    st.session_state.free_used = False
 
-lottie_header = load_lottie("https://assets2.lottiefiles.com/packages/lf20_tll0j4bb.json")
+st.set_page_config(page_title="AI Career Builder Ultimate", page_icon="💼", layout="wide")
+st.title("💼 AI Career Builder Ultimate")
 
-# --- Custom CSS ---
-st.markdown("""
-<style>
-:root {
-  --accent: #1e90ff;
-  --bg: #f5f7fa;
-  --card-bg: #ffffff;
-  --text: #333333;
-  --radius: 16px;
-  --shadow: rgba(0,0,0,0.1) 0px 4px 16px;
+# Sidebar: Plans & Payment
+st.sidebar.title("💳 Payment & Access")
+
+plans = {
+    "Daily Access ($10/day)": 'price_daily_xxxxxx',
+    "Weekly Pass ($50/week)": 'price_weekly_xxxxxx',
+    "Monthly Pro ($150/month)": 'price_monthly_xxxxxx',
+    "Lifetime Access ($500 one-time)": 'price_lifetime_xxxxxx'
 }
-body, .reportview-container { background: var(--bg) !important; color: var(--text) !important; }
-#MainMenu, footer { visibility: hidden; }
-[data-testid="stSidebar"] {
-  background: var(--card-bg) !important;
-  border-top-right-radius: var(--radius);
-  border-bottom-right-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-.card {
-  background: var(--card-bg);
-  padding: 1rem;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 1rem;
-  transition: transform .2s ease;
-}
-.card:hover { transform: translateY(-4px); }
-.lottie { position: absolute; top: 0; right: 0; width: 200px; opacity: 0.3; }
-@media (max-width: 700px) {
-    .card { padding: .5rem; }
-    [data-testid="stSidebar"] { padding: .5rem; }
-}
-</style>
-""", unsafe_allow_html=True)
 
-# --- Header ---
-with st.container():
-    st_lottie(lottie_header, height=120, key="header")
-    st.markdown("# AI Career Builder Ultimate")
-    st.markdown("Empower your next career move with AI-powered resumes, cover letters, and more.")
+if not st.session_state.free_used:
+    st.sidebar.success("🎉 You can generate 1 free resume!")
+else:
+    st.sidebar.warning("🔒 Premium access required for more resumes.")
 
-# --- Navigation ---
-nav = option_menu(
-    None,
-    ["Resume Builder","Cover Letter","LinkedIn","ATS Match","Salary"],
-    icons=["file-text","envelope","linkedin","journal-check","currency-dollar"],
-    menu_icon="cast",
-    default_index=0,
-    orientation="horizontal",
-    styles={
-        "container": {"padding":"0","background-color":"var(--bg)"},
-        "nav-link": {"font-size":"1rem","margin":"0 8px","color":"var(--text)"},
-        "nav-link-selected": {"background-color":"var(--accent)","color":"#fff","border-radius":"var(--radius)"}
-    }
-)
+for plan, price_id in plans.items():
+    if st.sidebar.button(f"Buy {plan}"):
+        try:
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url='https://ai-career-builder-tlkzz8xxeamz7svg78ek88.streamlit.app/success',
+                cancel_url='https://ai-career-builder-tlkzz8xxeamz7svg78ek88.streamlit.app/cancel',
+            )
+            st.sidebar.markdown(f"[👉 Click here to pay]({session.url})", unsafe_allow_html=True)
+        except Exception as e:
+            st.sidebar.error(f"Payment error: {str(e)}")
 
-# --- PDF Builder ---
-def clean_text(text):
-    return unicodedata.normalize('NFKD', text).encode('ascii','ignore').decode('ascii')
+# Resume Builder Form
+st.subheader("🚀 Build Your Professional Resume")
+name = st.text_input("Your Name")
+title = st.text_input("Professional Title")
+email = st.text_input("Email")
+phone = st.text_input("Phone Number")
+summary = st.text_area("Professional Summary")
+skills = st.text_input("Skills (comma-separated)")
+experience = st.text_area("Work Experience")
+education = st.text_area("Education")
+projects = st.text_area("Projects or Achievements")
 
-def build_pdf(name, title, contact, sections, photo=None, qr_img=None, font="Helvetica"):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font(font, 'B', 16)
-    pdf.set_text_color(30,144,255)
-    pdf.cell(0,10, clean_text(name), ln=True, align='C')
-    pdf.set_font(font, 'I', 12)
-    pdf.set_text_color(0,0,0)
-    pdf.cell(0,8, clean_text(title), ln=True, align='C')
-    pdf.ln(5)
-    pdf.set_font(font, size=10)
-    pdf.multi_cell(0,6, clean_text(contact))
-    pdf.ln(4)
-    if photo:
-        pdf.image(photo, x=165, y=12, w=30)
-    if qr_img:
-        pdf.image(qr_img, x=10, y=12, w=30)
-    for h,b in sections.items():
-        pdf.set_font(font, 'B', 12)
-        pdf.set_text_color(30,144,255)
-        pdf.cell(0,6, clean_text(h), ln=True)
-        pdf.set_font(font, size=10)
-        pdf.set_text_color(0,0,0)
-        pdf.multi_cell(0,6, clean_text(b))
-        pdf.ln(3)
-    pdf.set_font(font, 'I', 8)
-    pdf.set_text_color(128,128,128)
-    pdf.cell(0,6, f"Generated by AI Career Builder Ultimate © {current_year} | Built by Akhil Mann", ln=True, align='C')
-    return pdf.output(dest='S').encode('latin-1','ignore')
+if st.button("Generate Resume"):
+    if not st.session_state.free_used:
+        st.session_state.free_used = True
+        unlocked = True
+    else:
+        unlocked = False
 
-def get_qr_bytes(link):
-    qr = qrcode.make(link)
-    buf = io.BytesIO()
-    qr.save(buf, format='PNG')
-    return buf.getvalue()
+    if unlocked:
+        resume_text = f"""
+        {name.upper()}
+        {title}
 
-PROJECTS = [
-    "Automated data pipeline improving efficiency by 30%",
-    "Redesigned product website, boosting traffic by 50%",
-    "Architected mobile app used by 10K+ users",
-    "Developed dashboard reducing report time by 40%"
-]
-AWARDS = ["Employee of the Month","Innovation Excellence Award","Top Performer Certificate","Dean's List"]
-CERTS  = ["PMP","Certified Scrum Master","AWS Solutions Architect","Google AnalyticsIQ"]
-VOL    = ["Community coding workshops","STEM mentoring","Animal shelter volunteer","Food drive coordinator"]
-HOBBIES= ["Photography","Hiking","Guitar","Travel","Cooking"]
-ACHIEVE = ["Increased sales by 23% in Q2","Won Hackathon 2023","Launched global project rollout","Optimized costs by 17%"]
-PUBLIC = ["Co-authored 'Modern AI Applications'","Published in IEEE Xplore","Medium top writer in Data Science"]
-PATENT = ["US12345678: ML Data Pipeline","WO2023123456: Wearable IoT Health"]
+        Contact: {email} | {phone}
 
-def gen_profile(title):
-    return f"As a driven {title}, I excel at leading teams, innovating solutions, and delivering results—combining vision with hands-on expertise."
+        SUMMARY
+        {summary}
 
-def gen_experience(title):
-    return f"Served as a {title}, managing high-impact projects, collaborating cross-functionally, solving challenges, and consistently exceeding KPIs."
+        SKILLS
+        {skills}
 
-def gen_education():
-    school = random.choice(["XYZ Int’l School","ABC Engineering College","Prestige University"])
-    return f"Graduated from {school} with honors. Led debate club, robotics team, and earned Academic Excellence awards."
+        EXPERIENCE
+        {experience}
 
-def gen_skills():
-    return "\n".join([f"- {s}" for s in ["Project Management","Leadership","Strategic Planning","Problem Solving","Technical Expertise","Communication"]])
+        EDUCATION
+        {education}
 
-def gen_languages():
-    return "English (Fluent), Spanish (Intermediate), French (Basic)"
+        PROJECTS / ACHIEVEMENTS
+        {projects}
 
-def gen_references():
-    return "Available upon request."
+        BONUS ENRICHMENT
+        Leadership roles, certifications, teamwork experience, adaptability, problem-solving, cross-functional collaboration.
+        """
 
-# --- Sidebar Settings ---
-with st.sidebar:
-    st.title("⚙️ Settings")
-    theme = st.selectbox("Theme", ["Light","Dark","Professional","Creative"])
-    font = st.selectbox("Font", ["Helvetica","Arial","Times","Courier"])
-    length = st.selectbox("Resume Length", ["1 Page","2 Pages"])
-    export = st.radio("Export As", ["PDF","TXT"])
-    photo = st.file_uploader("Profile Photo", type=["jpg","png"])
-    st.markdown("---")
-    st.markdown(f"© {current_year} AI Career Builder Ultimate by Akhil Mann")
+        st.success("✅ Resume generated! Download below.")
+        st.download_button("Download Resume (TXT)", resume_text, file_name="resume.txt")
+    else:
+        st.error("❗ You’ve used your free resume. Please choose a plan on the left to unlock unlimited access.")
 
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "resume_data" not in st.session_state:
-    st.session_state.resume_data = {}
-
-# --- About & FAQ ---
-with st.expander("ℹ️ About & FAQ"):
-    st.markdown("""
-    **AI Career Builder Ultimate** was created by Akhil Mann. It uses the latest AI and smart offline generators to create resumes, cover letters, LinkedIn summaries, and more.
-    
-    - **Why use us?** Your resume will look professional, modern, and pass ATS screens.
-    - **Can I trust my data?** Your info never leaves your device (unless you use premium AI).
-    - **What makes a good resume?** Focus on results, measurable impact, and clear, clean layout.
-    - **Need help?** Email: [werttreat@gmail.com](mailto:werttreat@gmail.com)
-    """)
-
-# --- Testimonials ---
-with st.expander("💬 What Users Say"):
-    st.write("⭐️⭐️⭐️⭐️⭐️ 'Best resume I've ever had, landed 3 interviews in a week.' - Rahul S.")
-    st.write("⭐️⭐️⭐️⭐️⭐️ 'Design is fire and the export is instant.' - Jessica W.")
-    st.write("⭐️⭐️⭐️⭐️⭐️ 'Way easier than Canva or Google Docs. Just perfect.' - Ethan C.")
-
-# --- Pages ---
-if nav == "Resume Builder":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🚀 Resume Builder")
-
-    with st.form("form"):
-        name       = st.text_input("Name")
-        title_line = st.text_input("Title")
-        email      = st.text_input("Email")
-        phone      = st.text_input("Phone")
-        website    = st.text_input("Website")
-        linkedin   = st.text_input("LinkedIn URL (for QR code, optional)")
-        address    = st.text_input("Location")
-        extras = st.multiselect("Add Sections", 
-            ["Projects","Certifications","Awards","Volunteer","Hobbies","Achievements","Publications","Patents","Extra Curricular"], 
-            default=["Projects","Certifications","Awards"])
-        submit = st.form_submit_button("Generate")
-
-    if submit:
-        st.success("✅ Done")
-
-        # core sections
-        profile = gen_profile(title_line)
-        exp = gen_experience(title_line)
-        edu = gen_education()
-        skills = gen_skills()
-        langs = gen_languages()
-        refs = gen_references()
-
-        # extend for 2 pages
-        if length=="2 Pages":
-            profile += "\n\nKnown for innovation, publications, and community leadership."
-            exp     += "\n\nLed global teams, scaled ops, drove digital transformation."
-            edu     += "\n\nCompleted workshops, internships, and leadership bootcamps."
-
-        # optional extras
-        opt = {}
-        if "Projects" in extras:
-            opt["Projects"] = "\n".join(random.sample(PROJECTS,2))
-        if "Certifications" in extras:
-            opt["Certifications"] = "\n".join(random.sample(CERTS,2))
-        if "Awards" in extras:
-            opt["Awards"] = "\n".join(random.sample(AWARDS,2))
-        if "Volunteer" in extras:
-            opt["Volunteer Work"] = "\n".join(random.sample(VOL,2))
-        if "Hobbies" in extras:
-            opt["Hobbies"] = ", ".join(random.sample(HOBBIES,3))
-        if "Achievements" in extras:
-            opt["Achievements"] = "\n".join(random.sample(ACHIEVE,2))
-        if "Publications" in extras:
-            opt["Publications"] = "\n".join(random.sample(PUBLIC,2))
-        if "Patents" in extras:
-            opt["Patents"] = "\n".join(random.sample(PATENT,1))
-        if "Extra Curricular" in extras:
-            opt["Extra Curricular"] = "Sports Captain, School Head Boy, Debating Finalist"
-
-        contact = f"📧 {email} | 📞 {phone} | 🌐 {website} | 📍 {address}"
-        sections = {
-            "Profile Summary": profile,
-            "Work Experience": exp,
-            "Education": edu,
-            "Skills": skills,
-            "Languages": langs,
-            "References": refs
-        }
-        sections.update(opt)
-
-        # --- QR Code ---
-        qr_img = None
-        if linkedin:
-            qr_bytes = get_qr_bytes(linkedin)
-            st.image(qr_bytes, width=100, caption="Scan for LinkedIn")
-            qr_img = "qr_temp.png"
-            with open(qr_img, "wb") as f:
-                f.write(qr_bytes)
-        # --- Profile Photo ---
-        photo_path = None
-        if photo:
-            img = Image.open(photo)
-            img.save("photo_temp.png")
-            st.image("photo_temp.png", width=120, caption="Profile Photo")
-            photo_path = "photo_temp.png"
-
-        # preview
-        st.markdown(f"## {name}")
-        st.markdown(f"**{title_line}**")
-        st.markdown(contact)
-        st.markdown("---")
-        for h,b in sections.items():
-            st.markdown(f"### {h}")
-            st.markdown(b)
-        # ATS Score
-        st.metric("ATS Score", f"{random.randint(78,98)}%")
-        # AI Action Bar (offline)
-        with st.expander("🔄 Rewrite/Expand Any Section (Offline AI)", expanded=False):
-            target_section = st.selectbox("Section to Rewrite", list(sections.keys()))
-            rewrite_action = st.selectbox("Action", ["Rewrite", "Expand", "Summarize", "Make Formal", "Add Bullets"])
-            if st.button("Go!"):
-                st.info(f"'{target_section}' was auto-{rewrite_action.lower()}ed (simulated)!")
-
-        # Word/Page Count
-        wordcount = sum(len(v.split()) for v in sections.values())
-        est_pages = 1 + (len(str(sections))//1200)
-        st.caption(f"Total Words: {wordcount} | Estimated Pages: {est_pages}")
-
-        # History
-        st.session_state.resume_data = sections.copy()
-        st.session_state.history.append(sections.copy())
-        if st.button("Undo Last Edit"):
-            if len(st.session_state.history) > 1:
-                st.session_state.history.pop()
-                st.session_state.resume_data = st.session_state.history[-1].copy()
-
-        # export
-        if export=="TXT":
-            txt=f"{name}\n{title_line}\n{contact}\n\n"
-            for h,b in sections.items(): txt+=f"{h}:\n{b}\n\n"
-            st.download_button("Download TXT",txt,f"{name}_resume.txt")
-        else:
-            pdf=build_pdf(name,title_line,contact,sections,photo=photo_path,qr_img=qr_img,font=font)
-            st.download_button("Download PDF",pdf,f"{name}_resume.pdf")
-
-        # Success confetti
-        st.balloons()
-        st.success("🎉 Resume ready! You're one step closer to your dream job.")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-elif nav == "Cover Letter":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("✉️ Cover Letter Generator")
-    st.info("Coming soon…")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-elif nav == "LinkedIn":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🔗 LinkedIn Summary")
-    st.info("Coming soon…")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-elif nav == "ATS Match":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("📊 ATS Job Match")
-    st.info("Paste resume & job description to get match score (coming soon).")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-elif nav == "Salary":
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("💰 Salary Estimator")
-    st.info("Enter role & location to estimate salary (coming soon).")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Footer & Legal ---
-st.markdown(
-    """
-    <hr>
-    <div style='text-align:center; font-size: 0.95rem; color: #888;'>
-        <b>AI Career Builder Ultimate</b> &nbsp;|&nbsp; 
-        Created & maintained by <b>Akhil Mann</b> &nbsp;|&nbsp; 
-        Contact: <a href='mailto:werttreat@gmail.com'>werttreat@gmail.com</a> &nbsp;|&nbsp;
-        <a href='https://example.com/privacy' target='_blank'>Privacy Policy</a> &nbsp;|&nbsp;
-        <a href='https://example.com/terms' target='_blank'>Terms</a><br>
-        <span>© 2025 AI Career Builder Ultimate by Akhil Mann. All rights reserved.</span><br>
-        <span style='font-size: 0.88em;'>Not affiliated with LinkedIn, Microsoft, or Google. For support, email <a href='mailto:werttreat@gmail.com'>werttreat@gmail.com</a>.</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.sidebar.markdown("---")
+st.sidebar.markdown("© 2025 AI Career Builder Ultimate | Akhil Mann | werttreat@gmail.com")
