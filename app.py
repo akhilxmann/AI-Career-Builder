@@ -9,9 +9,9 @@ stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
 # Stripe Price IDs (from your dashboard) - Lifetime removed!
 PRICE_IDS = {
-    "1 Day Access": "price_1RT9GFGa2mSIkW6rFnO9B4QK",
-    "1 Week Access": "price_1RT9cWGa2mSIkW6rJKx8cyj4",
-    "1 Month Access": "price_1RT9dLGa2mSIkW6rsOmemObA"
+    "1 Day Access": "price_1RT9VaGRCFNpMv7GYYUcWP1q",
+    "1 Week Access": "price_1RT9ZEGRCFNpMv7GWGWSgk64",
+    "1 Month Access": "price_1RTCyOGRCFNpMv7GBwfTCTdT"
 }
 
 SUBSCRIPTION_PLANS = {"1 Day Access", "1 Week Access", "1 Month Access"}
