@@ -4,16 +4,18 @@ import base64
 from fpdf import FPDF
 import os
 
-# --- Stripe: Use secret from Streamlit secrets for safety ---
+# Load Stripe key from Streamlit secrets!
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
-# -- USE YOUR ACTUAL PRICE IDs HERE! --
+# Stripe Price IDs (from your dashboard)
 PRICE_IDS = {
-    "One Day": "price_1RT9GFGa2mSIkW6rFnO9B4QK",   # ← Replace with real Stripe Price ID for 1-day
-    "One Week": "price_1RT9cWGa2mSIkW6rJKx8cyj4",  # ← Replace with real Stripe Price ID for 1-week
-    "Monthly": "price_1RT9dLGa2mSIkW6rsOmemObA",   # ← Fill if needed
-    "Lifetime": "price_1RT9gpGa2mSIkW6rCU8xhVkQ",  # ← Fill if needed
+    "1 Day Access": "price_1RT9GFGa2mSIkW6rFnO9B4QK",
+    "1 Week Access": "price_1RT9cWGa2mSIkW6rJKx8cyj4",
+    "1 Month Access": "price_1RT9dLGa2mSIkW6rsOmemObA",
+    "Lifetime Access": "price_1RT9gpGa2mSIkW6rCU8xhVkQ"
 }
+
+SUBSCRIPTION_PLANS = {"1 Day Access", "1 Week Access", "1 Month Access"}
 
 APP_NAME = "AI Career Builder Ultimate"
 OWNER = "Akhil Mann"
@@ -22,7 +24,13 @@ DOMAIN = "https://ai-career-builder-tlkzz8xxeamz7svg78ek88.streamlit.app"
 
 st.set_page_config(page_title=APP_NAME, page_icon="🚀", layout="wide")
 
-# Lottie helper (can cache if needed)
+if "free_resume_used" not in st.session_state:
+    st.session_state.free_resume_used = False
+if "premium_unlocked" not in st.session_state:
+    st.session_state.premium_unlocked = False
+if "payment_link" not in st.session_state:
+    st.session_state.payment_link = None
+
 def load_lottie_animation(url):
     import requests
     r = requests.get(url)
@@ -31,13 +39,7 @@ def load_lottie_animation(url):
     else:
         return None
 
-# Session state: free and premium logic
-if "free_resume_used" not in st.session_state:
-    st.session_state.free_resume_used = False
-if "premium_unlocked" not in st.session_state:
-    st.session_state.premium_unlocked = False
-
-# Sidebar
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("⚙️ Settings & Customization")
     resume_style = st.selectbox("Resume Style", ["Formal", "Modern", "Creative"])
@@ -45,15 +47,14 @@ with st.sidebar:
     length = st.selectbox("Resume Length", ["Short", "Medium", "Detailed"])
     language = st.selectbox("Language", ["English", "Spanish", "French", "Hindi"])
     dark_mode = st.toggle("🌙 Dark Mode", value=False)
-
     st.markdown("---")
     st.subheader("💎 Unlock Pro Features")
 
     if not st.session_state.premium_unlocked:
         st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
-
         for plan, price_id in PRICE_IDS.items():
-            if price_id.startswith("price_") and st.button(f"Buy {plan} Plan"):
+            if st.button(f"Buy {plan}"):
+                mode = "payment" if plan == "Lifetime Access" else "subscription"
                 try:
                     session = stripe.checkout.Session.create(
                         payment_method_types=['card'],
@@ -61,20 +62,20 @@ with st.sidebar:
                             'price': price_id,
                             'quantity': 1,
                         }],
-                        mode='payment',
+                        mode=mode,
                         success_url=DOMAIN + '?success=1',
                         cancel_url=DOMAIN + '?canceled=1',
                     )
+                    st.session_state.payment_link = session.url
                     st.markdown(
-                        f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 30px;border-radius:12px;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;">Pay for {plan} Plan</a>',
+                        f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 30px;border-radius:12px;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;">Pay for {plan}</a>',
                         unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"Stripe error: {e}")
-
     st.markdown("---")
     st.write(f"© 2025 {APP_NAME} | {OWNER} | {EMAIL}")
 
-# Header + Lottie
+# --- HEADER + LOTTIE ---
 st.markdown(f"<h1 style='text-align:center;font-size:3em;font-weight:900'>{APP_NAME}</h1>", unsafe_allow_html=True)
 try:
     from streamlit_lottie import st_lottie
@@ -82,12 +83,21 @@ try:
     st_lottie(load_lottie_animation(lottie_url), height=220)
 except Exception:
     pass
-
 st.markdown("### 🚀 Build Your Dream Resume With AI")
 
-# --- Form ---
+# --- PAYMENT LINK BANNER (after click) ---
+if st.session_state.payment_link:
+    st.markdown(
+        f'<div style="text-align:center">'
+        f'<a href="{st.session_state.payment_link}" target="_blank">'
+        '<button style="font-size:22px;padding:16px 40px;border-radius:12px;background:linear-gradient(90deg,#2463EB,#5EEAD4);color:#fff;border:none;">Pay Now</button>'
+        '</a></div>', unsafe_allow_html=True
+    )
+    st.info("Once paid, return to this page. Your purchase will unlock unlimited resume generation.")
+
+# --- FORM ---
 with st.form("resume_form"):
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
     with col1:
         name = st.text_input("Full Name", placeholder="e.g. Akhil Mann")
         title = st.text_input("Professional Title", placeholder="e.g. Data Scientist")
@@ -96,18 +106,15 @@ with st.form("resume_form"):
         experience = st.text_area("Work Experience", placeholder="Company, Position, Dates, Responsibilities...")
         education = st.text_area("Education", placeholder="College, Degree, Dates...")
         projects = st.text_area("Projects or Achievements", placeholder="Project name, Description...")
-
     with col2:
         email = st.text_input("Email", placeholder="your@email.com")
         phone = st.text_input("Phone Number", placeholder="+1-xxx-xxx-xxxx")
         linkedin = st.text_input("LinkedIn (optional)", placeholder="linkedin.com/in/akhilmann")
         photo = st.file_uploader("Profile Photo (optional)", type=["jpg", "jpeg", "png"])
-        page_count = st.selectbox("Number of Pages", [1,2])
+        page_count = st.selectbox("Number of Pages", [1, 2])
         pdf_or_txt = st.selectbox("Download Format", ["PDF", "TXT"])
-
     submitted = st.form_submit_button("Generate Resume 🚀")
 
-# --- Offline AI-style enrichment ---
 def enrich_content(text, context):
     if not text or len(text.strip()) < 10:
         if "data scientist" in context.lower():
@@ -219,6 +226,5 @@ if submitted:
     else:
         st.warning("🔒 You have used your free resume. Please unlock unlimited resumes in the sidebar to continue.")
 
-# Footer
 st.markdown("---")
 st.info(f"Contact: {EMAIL} | All rights reserved © {OWNER} 2025")
