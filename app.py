@@ -9,10 +9,10 @@ stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
 # -- USE YOUR ACTUAL PRICE IDs HERE! --
 PRICE_IDS = {
-    "One Day": "price_xxxxxxxxxxxxx",   # ← Replace with real Stripe Price ID for 1-day
-    "One Week": "price_xxxxxxxxxxxxx",  # ← Replace with real Stripe Price ID for 1-week
-    "Monthly": "price_xxxxxxxxxxxxx",   # ← Fill if needed
-    "Lifetime": "price_xxxxxxxxxxxxx",  # ← Fill if needed
+    "One Day": "price_1RT9GFGa2mSIkW6rFnO9B4QK",   # ← Replace with real Stripe Price ID for 1-day
+    "One Week": "price_1RT9cWGa2mSIkW6rJKx8cyj4",  # ← Replace with real Stripe Price ID for 1-week
+    "Monthly": "price_1RT9dLGa2mSIkW6rsOmemObA",   # ← Fill if needed
+    "Lifetime": "price_1RT9gpGa2mSIkW6rCU8xhVkQ",  # ← Fill if needed
 }
 
 APP_NAME = "AI Career Builder Ultimate"
