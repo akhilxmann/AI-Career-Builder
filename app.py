@@ -7,12 +7,11 @@ import os
 # Load Stripe key from Streamlit secrets!
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
-# Stripe Price IDs (from your dashboard)
+# Stripe Price IDs (from your dashboard) - Lifetime removed!
 PRICE_IDS = {
     "1 Day Access": "price_1RT9GFGa2mSIkW6rFnO9B4QK",
     "1 Week Access": "price_1RT9cWGa2mSIkW6rJKx8cyj4",
-    "1 Month Access": "price_1RT9dLGa2mSIkW6rsOmemObA",
-    "Lifetime Access": "price_1RT9gpGa2mSIkW6rCU8xhVkQ"
+    "1 Month Access": "price_1RT9dLGa2mSIkW6rsOmemObA"
 }
 
 SUBSCRIPTION_PLANS = {"1 Day Access", "1 Week Access", "1 Month Access"}
@@ -54,7 +53,8 @@ with st.sidebar:
         st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
         for plan, price_id in PRICE_IDS.items():
             if st.button(f"Buy {plan}"):
-                mode = "payment" if plan == "Lifetime Access" else "subscription"
+                # All are subscriptions now
+                mode = "subscription"
                 try:
                     session = stripe.checkout.Session.create(
                         payment_method_types=['card'],
