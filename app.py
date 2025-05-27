@@ -4,14 +4,15 @@ import base64
 from fpdf import FPDF
 import os
 
-# ===== SECURE STRIPE SETUP =====
+# --- Stripe: Use secret from Streamlit secrets for safety ---
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
+# -- USE YOUR ACTUAL PRICE IDs HERE! --
 PRICE_IDS = {
-    "Daily": "prod_SNvMVsr9yi5AJi",        # REPLACE with real Stripe Price ID
-    "Weekly": "prod_SNvQ6laaKeLsHw",
-    "Monthly": "price_monthly_xxxxxx",
-    "Lifetime": "price_lifetime_xxxxxx"
+    "One Day": "price_xxxxxxxxxxxxx",   # ← Replace with real Stripe Price ID for 1-day
+    "One Week": "price_xxxxxxxxxxxxx",  # ← Replace with real Stripe Price ID for 1-week
+    "Monthly": "price_xxxxxxxxxxxxx",   # ← Fill if needed
+    "Lifetime": "price_xxxxxxxxxxxxx",  # ← Fill if needed
 }
 
 APP_NAME = "AI Career Builder Ultimate"
@@ -21,7 +22,7 @@ DOMAIN = "https://ai-career-builder-tlkzz8xxeamz7svg78ek88.streamlit.app"
 
 st.set_page_config(page_title=APP_NAME, page_icon="🚀", layout="wide")
 
-# ===== LOTTIE ANIMATION LOADER =====
+# Lottie helper (can cache if needed)
 def load_lottie_animation(url):
     import requests
     r = requests.get(url)
@@ -30,16 +31,13 @@ def load_lottie_animation(url):
     else:
         return None
 
-lottie_resume = load_lottie_animation("https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json")
-lottie_premium = load_lottie_animation("https://assets10.lottiefiles.com/packages/lf20_qhrndegw.json")
-
-# ===== SESSION STATE =====
+# Session state: free and premium logic
 if "free_resume_used" not in st.session_state:
     st.session_state.free_resume_used = False
 if "premium_unlocked" not in st.session_state:
     st.session_state.premium_unlocked = False
 
-# ===== SIDEBAR =====
+# Sidebar
 with st.sidebar:
     st.title("⚙️ Settings & Customization")
     resume_style = st.selectbox("Resume Style", ["Formal", "Modern", "Creative"])
@@ -55,7 +53,7 @@ with st.sidebar:
         st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
 
         for plan, price_id in PRICE_IDS.items():
-            if st.button(f"Buy {plan} Plan"):
+            if price_id.startswith("price_") and st.button(f"Buy {plan} Plan"):
                 try:
                     session = stripe.checkout.Session.create(
                         payment_method_types=['card'],
@@ -64,8 +62,8 @@ with st.sidebar:
                             'quantity': 1,
                         }],
                         mode='payment',
-                        success_url=DOMAIN + '/success',
-                        cancel_url=DOMAIN + '/cancel',
+                        success_url=DOMAIN + '?success=1',
+                        cancel_url=DOMAIN + '?canceled=1',
                     )
                     st.markdown(
                         f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 30px;border-radius:12px;text-decoration:none;font-weight:700;display:inline-block;margin-top:16px;">Pay for {plan} Plan</a>',
@@ -76,22 +74,18 @@ with st.sidebar:
     st.markdown("---")
     st.write(f"© 2025 {APP_NAME} | {OWNER} | {EMAIL}")
 
-# ===== HEADER & LOTTIE =====
+# Header + Lottie
 st.markdown(f"<h1 style='text-align:center;font-size:3em;font-weight:900'>{APP_NAME}</h1>", unsafe_allow_html=True)
-if not st.session_state.premium_unlocked:
-    st_lottie_url = "https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json"
-else:
-    st_lottie_url = "https://assets10.lottiefiles.com/packages/lf20_qhrndegw.json"
-
 try:
     from streamlit_lottie import st_lottie
-    st_lottie(load_lottie_animation(st_lottie_url), height=220)
+    lottie_url = "https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json"
+    st_lottie(load_lottie_animation(lottie_url), height=220)
 except Exception:
     pass
 
 st.markdown("### 🚀 Build Your Dream Resume With AI")
 
-# ===== FORM =====
+# --- Form ---
 with st.form("resume_form"):
     col1, col2 = st.columns([2,1])
     with col1:
@@ -113,7 +107,7 @@ with st.form("resume_form"):
 
     submitted = st.form_submit_button("Generate Resume 🚀")
 
-# ===== ENRICHMENT LOGIC =====
+# --- Offline AI-style enrichment ---
 def enrich_content(text, context):
     if not text or len(text.strip()) < 10:
         if "data scientist" in context.lower():
@@ -225,6 +219,6 @@ if submitted:
     else:
         st.warning("🔒 You have used your free resume. Please unlock unlimited resumes in the sidebar to continue.")
 
-# ===== FOOTER =====
+# Footer
 st.markdown("---")
 st.info(f"Contact: {EMAIL} | All rights reserved © {OWNER} 2025")
