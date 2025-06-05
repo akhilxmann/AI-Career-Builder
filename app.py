@@ -42,6 +42,8 @@ if "newsletter_emails" not in st.session_state:
     st.session_state.newsletter_emails = []
 if "theme" not in st.session_state:
     st.session_state.theme = "Light"
+if "page" not in st.session_state:
+    st.session_state.page = "Build Resume"
 
 # ───────── Utility Functions ─────────
 def load_lottie_animation(url):
@@ -152,8 +154,11 @@ analytics_code = f"""
 """
 components.html(analytics_code, height=0, width=0)
 
-# ───────── MAIN NAVIGATION ─────────
-page = st.sidebar.radio("Navigate", ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"])
+# ───────── Sidebar Home Button & Navigation ─────────
+st.sidebar.image("https://raw.githubusercontent.com/akulapena/logos/main/logo.png", width=120)  # placeholder logo URL
+if st.sidebar.button("🏠 Home"):
+    st.session_state.page = "Build Resume"
+page = st.sidebar.radio("Navigate", ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"], key="page")
 
 # ───────── STYLE CUSTOMIZATION ─────────
 st.sidebar.markdown("---")
@@ -197,7 +202,7 @@ if page == "Build Resume":
         """, unsafe_allow_html=True
     )
 
-    # ─── PRO FEATURE BUY BUTTONS (NOW VISIBLE ON PAGE) ───
+    # ─── PRO FEATURE BUY BUTTONS ───
     if not st.session_state.premium_unlocked:
         st.subheader("💎 Unlock Pro Features")
         st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
@@ -294,7 +299,6 @@ elif page == "Contact Us":
 elif page == "Chatbot":
     st.title("🤖 AI Chatbot")
     st.markdown("Chat with our AI assistant for quick resume advice, tips, or general questions.")
-    # Embed a placeholder chatbot iframe (replace with your actual chatbot URL)
     chatbot_html = """
     <iframe
         width="100%"
