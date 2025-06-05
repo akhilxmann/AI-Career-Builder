@@ -197,11 +197,38 @@ if page == "Build Resume":
         """, unsafe_allow_html=True
     )
 
+    # ─── PRO FEATURE BUY BUTTONS (NOW VISIBLE ON PAGE) ───
+    if not st.session_state.premium_unlocked:
+        st.subheader("💎 Unlock Pro Features")
+        st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
+        for plan, price_id in PRICE_IDS.items():
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.write(f"**{plan}**")
+            with col2:
+                if st.button(f"Buy {plan}", key=plan):
+                    try:
+                        session = stripe.checkout.Session.create(
+                            payment_method_types=['card'],
+                            line_items=[{'price': price_id, 'quantity': 1}],
+                            mode="subscription",
+                            success_url=DOMAIN + '?success=1',
+                            cancel_url=DOMAIN + '?canceled=1',
+                        )
+                        st.session_state.payment_link = session.url
+                        st.markdown(
+                            f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;">Pay</a>',
+                            unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"Stripe error: {e}")
+        st.markdown("---")
+
+    # If payment link is generated
     if st.session_state.payment_link:
         st.markdown(
             f'<div style="text-align:center">'
             f'<a href="{st.session_state.payment_link}" target="_blank">'
-            '<button style="font-size:22px;padding:16px 40px;border-radius:12px;background:linear-gradient(90deg,#2463EB,#5EEAD4);color:#fff;border:none;">Pay Now</button>'
+            '<button style="font-size:20px;padding:12px 24px;border-radius:8px;background:linear-gradient(90deg,#2463EB,#5EEAD4);color:#fff;border:none;">Pay Now</button>'
             '</a></div>', unsafe_allow_html=True
         )
         st.info("Once paid, return to this page. Your purchase will unlock unlimited resume generation.")
