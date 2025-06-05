@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import requests
 import streamlit.components.v1 as components
-from transformers import pipeline  # added for local AI
+from transformers import pipeline  # using local AI model
 
 # ───────── Configuration & Secrets ─────────
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
@@ -55,7 +55,7 @@ def load_lottie_animation(url):
 @st.cache_resource(show_spinner=False)
 def load_local_generator():
     """
-    Load DistilGPT2 in memory. 
+    Load the local AI model (distilgpt2) in memory.
     Runs on CPU only.
     """
     return pipeline(
@@ -67,28 +67,40 @@ def load_local_generator():
 
 def enrich_content(text, context):
     """
-    If the user‐supplied text is < 10 characters (or blank),
-    generate a short AI‐style completion using DistilGPT2.
-    Otherwise return their text unchanged.
+    If the user-supplied text is very short (<10 chars) or blank:
+      - If the user has NOT unlocked premium, return a generic, professionally worded sentence.
+      - If the user HAS unlocked premium, generate AI-powered content with distilgpt2.
+    Otherwise, return the user's own text.
     """
+    # Normalize context for template
+    ctx = context.strip().lower()
     if not text or len(text.strip()) < 10:
-        prompt = f"{context.title()} Specialist: "
-        generator = load_local_generator()
-        output = generator(
-            prompt,
-            max_length=40,
-            num_return_sequences=1,
-            do_sample=True,
-            top_p=0.95,
-            temperature=0.8
-        )
-        generated = output[0]["generated_text"]
-        return generated.replace(prompt, "").strip()
+        if not st.session_state.premium_unlocked:
+            # Free version: simple, professional generic sentence
+            if ctx:
+                return f"Experienced {ctx} professional with a strong track record of delivering high-quality results and driving continuous improvement in the field."
+            else:
+                return "Dedicated professional with a strong track record of delivering high-quality results and driving continuous improvement."
+        else:
+            # Premium version: use AI model for richer content
+            prompt = f"{context.title()} Specialist: "
+            generator = load_local_generator()
+            output = generator(
+                prompt,
+                max_length=len(prompt.split()) + 40,
+                num_return_sequences=1,
+                do_sample=True,
+                top_p=0.95,
+                temperature=0.8
+            )
+            generated = output[0]["generated_text"]
+            return generated.replace(prompt, "").strip()
     return text
 
 def make_resume_txt(**kwargs):
     """Generate a plain-text resume."""
-    return f"""
+    # Build each section, ensuring spacing
+    txt = f"""
 {name.upper()}
 {title}
 Contact: {email} | {phone}
@@ -109,9 +121,12 @@ EDUCATION
 PROJECTS / ACHIEVEMENTS
 {enrich_content(projects, title)}
 """
+    if int(page_count) == 2:
+        txt += "\n\nADDITIONAL ENRICHMENT\nLeadership, Certifications, Volunteering, Soft Skills, and Professional Growth.\n"
+    return txt
 
 def make_resume_pdf(**kwargs):
-    """Generate a PDF resume."""
+    """Generate a PDF resume with structured sections."""
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 18)
@@ -126,7 +141,10 @@ def make_resume_pdf(**kwargs):
     pdf.set_font("Helvetica", "I", 14)
     pdf.cell(0, 10, title, ln=1, align='C')
     pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(0, 7, f"\nContact: {email} | {phone}\nLinkedIn: {linkedin if linkedin else 'N/A'}\n", align='C')
+    pdf.multi_cell(0, 7, f"Contact: {email} | {phone}\nLinkedIn: {linkedin if linkedin else 'N/A'}\n", align='C')
+    pdf.ln(5)
+
+    # Define sections for PDF output
     sections = [
         ("SUMMARY", enrich_content(summary, title)),
         ("SKILLS", enrich_content(skills, title)),
@@ -134,12 +152,16 @@ def make_resume_pdf(**kwargs):
         ("EDUCATION", enrich_content(education, title)),
         ("PROJECTS / ACHIEVEMENTS", enrich_content(projects, title))
     ]
+
     for section, content in sections:
-        pdf.ln(2)
         pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 8, section, ln=1)
         pdf.set_font("Helvetica", "", 11)
-        pdf.multi_cell(0, 6, content)
+        # If content is multi-sentence, break into lines
+        for line in content.split("\n"):
+            pdf.multi_cell(0, 6, line)
+        pdf.ln(3)
+
     if int(page_count) == 2:
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 13)
