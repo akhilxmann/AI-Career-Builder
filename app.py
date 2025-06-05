@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 import requests
 import streamlit.components.v1 as components
+from transformers import pipeline  # added for local AI
 
 # ───────── Configuration & Secrets ─────────
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
@@ -51,33 +52,38 @@ def load_lottie_animation(url):
     r = requests.get(url)
     return r.json() if r.status_code == 200 else None
 
+@st.cache_resource(show_spinner=False)
+def load_local_generator():
+    """
+    Load DistilGPT2 in memory. 
+    Runs on CPU only.
+    """
+    return pipeline(
+        "text-generation",
+        model="distilgpt2",
+        tokenizer="distilgpt2",
+        device=-1  # CPU device
+    )
+
 def enrich_content(text, context):
-    """Return AI-style enriched content for short inputs."""
-    ai_examples = {
-        "data scientist": [
-            "Led development of predictive models using Python and TensorFlow, improving forecast accuracy by 35%.",
-            "Engineered real-time data pipelines, reducing data latency by 60%, enabling faster decision-making.",
-            "Collaborated with cross-functional teams to deploy scalable ML models in production."
-        ],
-        "developer": [
-            "Developed RESTful APIs with Node.js and Express, serving over 100k monthly users.",
-            "Optimized front-end performance with React and Redux, cutting load times by 50%.",
-            "Integrated CI/CD pipelines using GitHub Actions, boosting release efficiency."
-        ],
-        "designer": [
-            "Crafted UI/UX for mobile apps with over 1M downloads using Figma and Adobe XD.",
-            "Redesigned landing pages, increasing conversion rate by 22% via A/B testing.",
-            "Created brand identity systems, establishing consistent visual language."
-        ],
-        "default": [
-            "Championed strategic initiatives, enhancing team performance and operational efficiency.",
-            "Recognized for leadership in project execution and stakeholder engagement.",
-            "Spearheaded training programs, elevating skillsets across departments."
-        ]
-    }
+    """
+    If the user‐supplied text is < 10 characters (or blank),
+    generate a short AI‐style completion using DistilGPT2.
+    Otherwise return their text unchanged.
+    """
     if not text or len(text.strip()) < 10:
-        key = next((k for k in ai_examples if k in context.lower()), "default")
-        return random.choice(ai_examples[key])
+        prompt = f"{context.title()} Specialist: "
+        generator = load_local_generator()
+        output = generator(
+            prompt,
+            max_length=40,
+            num_return_sequences=1,
+            do_sample=True,
+            top_p=0.95,
+            temperature=0.8
+        )
+        generated = output[0]["generated_text"]
+        return generated.replace(prompt, "").strip()
     return text
 
 def make_resume_txt(**kwargs):
