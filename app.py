@@ -3,7 +3,6 @@ import stripe
 import base64
 from fpdf import FPDF
 import os
-import random
 import time
 from datetime import datetime
 import requests
@@ -65,103 +64,35 @@ def load_local_generator():
         device=-1  # CPU device
     )
 
-def enrich_content(text, context):
+def enrich_content(text, field_name, custom_context=""):
     """
-    If the user-supplied text is very short (<10 chars) or blank:
-      - If the user has NOT unlocked premium, return a generic, professionally worded sentence.
-      - If the user HAS unlocked premium, generate AI-powered content with distilgpt2.
+    Enrich user-provided text. If the text is short (<10 chars) or empty:
+      - If premium is locked, return a generic professional sentence.
+      - If premium is unlocked, generate AI-powered content using distilgpt2 with optional custom context.
     Otherwise, return the user's own text.
     """
-    ctx = context.strip().lower()
     if not text or len(text.strip()) < 10:
         if not st.session_state.premium_unlocked:
-            # Free version: generic professional sentence
             return "Dedicated professional with a proven track record of delivering excellence and driving continuous improvement."
         else:
-            # Premium: use AI model for richer content
-            prompt = f"{context.title()} Specialist: "
+            prompt_base = f"{field_name.title()}:"
+            if custom_context:
+                prompt_base = f"{custom_context.strip()} {prompt_base}"
             generator = load_local_generator()
             output = generator(
-                prompt,
-                max_length=len(prompt.split()) + 40,
+                prompt_base,
+                max_length=len(prompt_base.split()) + 40,
                 num_return_sequences=1,
                 do_sample=True,
-                top_p=0.95,
+                top_p=0.9,
                 temperature=0.8
             )
             generated = output[0]["generated_text"]
-            return generated.replace(prompt, "").strip()
+            return generated.replace(prompt_base, "").strip()
     return text
 
 def make_resume_txt(**kwargs):
-    """Generate a plain-text resume."""
-    title_lower = title.strip().lower()
-
-    # If user is a doctor/surgeon, build a one-page, custom resume:
-    if "doctor" in title_lower or "surgeon" in title_lower:
-        summary_text = (
-            f"Results-driven {title.title()} with over 10 years of experience "
-            "specializing in facial reconstructive and cosmetic surgery. "
-            "Adept at leading surgery teams, developing patient care protocols, "
-            "and mentoring junior surgeons to achieve optimal outcomes."
-        )
-        skills_text = (
-            "- Facial Reconstruction Surgery\n"
-            "- Cosmetic and Reconstructive Techniques\n"
-            "- Patient Consultation and Management\n"
-            "- Surgical Planning and Execution\n"
-            "- Post-Operative Care and Follow-Up\n"
-            "- Clinical Research and Publications"
-        )
-        experience_text = (
-            "- 2013-Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
-            "  * Performed over 650 successful facial reconstructive surgeries, "
-            "improving patient satisfaction by 40%.\n"
-            "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
-            "standardized surgical protocols reducing complications by 25%.\n"
-            "  * Published 10+ research papers on advanced surgical techniques in "
-            "peer-reviewed journals.\n\n"
-            "- 2010-2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
-            "  * Completed rigorous residency focused on maxillofacial reconstruction, "
-            "trauma management, and microsurgery.\n"
-            "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
-        )
-        education_text = (
-            "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
-            "- Graduated with honors (Top 5% of class)\n"
-            "- Completed elective in Advanced Facial Surgery Techniques, 2009"
-        )
-        projects_text = (
-            "- Developed a minimally invasive facial reconstruction protocol "
-            "reducing operative time by 30% and improving recovery rates.\n"
-            "- Co-creator of the \"Facial Aesthetics Clinic\" initiative, serving over 2000 patients.\n"
-            "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
-        )
-
-        txt = f"""
-{name.upper()}
-{title.title()}
-Contact: {email} | {phone}
-LinkedIn: {linkedin if linkedin else "N/A"}
-
-SUMMARY
-{summary_text}
-
-SKILLS
-{skills_text}
-
-EXPERIENCE
-{experience_text}
-
-EDUCATION
-{education_text}
-
-PROJECTS / ACHIEVEMENTS
-{projects_text}
-"""
-        return txt.strip()
-
-    # Otherwise, default to the free/premium content generator:
+    """Generate a plain-text resume using only user inputs and AI enrichment—no hard-coded placeholders."""
     txt = f"""
 {name.upper()}
 {title}
@@ -169,27 +100,26 @@ Contact: {email} | {phone}
 LinkedIn: {linkedin if linkedin else "N/A"}
 
 SUMMARY
-{enrich_content(summary, title)}
+{enrich_content(summary, "Summary", custom_context)}
 
 SKILLS
-{enrich_content(skills, title)}
+{enrich_content(skills, "Skills", custom_context)}
 
 EXPERIENCE
-{enrich_content(experience, title)}
+{enrich_content(experience, "Experience", custom_context)}
 
 EDUCATION
-{enrich_content(education, title)}
+{enrich_content(education, "Education", custom_context)}
 
 PROJECTS / ACHIEVEMENTS
-{enrich_content(projects, title)}
+{enrich_content(projects, "Projects / Achievements", custom_context)}
 """
     if int(page_count) == 2:
         txt += "\n\nADDITIONAL ENRICHMENT\nLeadership, Certifications, Volunteering, Soft Skills, and Professional Growth.\n"
     return txt.strip()
 
 def make_resume_pdf(**kwargs):
-    """Generate a PDF resume with structured sections."""
-    title_lower = title.strip().lower()
+    """Generate a PDF resume with structured sections—no random placeholders."""
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 18)
@@ -202,60 +132,18 @@ def make_resume_pdf(**kwargs):
         image.save(temp_file.name)
         pdf.image(temp_file.name, x=165, y=20, w=30, h=30)
     pdf.set_font("Helvetica", "I", 14)
-    pdf.cell(0, 10, title.title(), ln=1, align='C')
+    pdf.cell(0, 10, title, ln=1, align='C')
     pdf.set_font("Helvetica", "", 11)
     pdf.multi_cell(0, 7, f"Contact: {email} | {phone}\nLinkedIn: {linkedin if linkedin else 'N/A'}\n", align='C')
     pdf.ln(5)
 
-    if "doctor" in title_lower or "surgeon" in title_lower:
-        sections = {
-            "SUMMARY": (
-                f"Results-driven {title.title()} with over 10 years of experience "
-                "specializing in facial reconstructive and cosmetic surgery. "
-                "Adept at leading surgery teams, developing patient care protocols, "
-                "and mentoring junior surgeons to achieve optimal outcomes."
-            ),
-            "SKILLS": (
-                "- Facial Reconstruction Surgery\n"
-                "- Cosmetic and Reconstructive Techniques\n"
-                "- Patient Consultation and Management\n"
-                "- Surgical Planning and Execution\n"
-                "- Post-Operative Care and Follow-Up\n"
-                "- Clinical Research and Publications"
-            ),
-            "EXPERIENCE": (
-                "- 2013-Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
-                "  * Performed over 650 successful facial reconstructive surgeries, "
-                "improving patient satisfaction by 40%.\n"
-                "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
-                "standardized surgical protocols reducing complications by 25%.\n"
-                "  * Published 10+ research papers on advanced surgical techniques in "
-                "peer-reviewed journals.\n\n"
-                "- 2010-2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
-                "  * Completed rigorous residency focused on maxillofacial reconstruction, "
-                "trauma management, and microsurgery.\n"
-                "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
-            ),
-            "EDUCATION": (
-                "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
-                "- Graduated with honors (Top 5% of class)\n"
-                "- Completed elective in Advanced Facial Surgery Techniques, 2009"
-            ),
-            "PROJECTS / ACHIEVEMENTS": (
-                "- Developed a minimally invasive facial reconstruction protocol "
-                "reducing operative time by 30% and improving recovery rates.\n"
-                "- Co-creator of the \"Facial Aesthetics Clinic\" initiative, serving over 2000 patients.\n"
-                "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
-            )
-        }
-    else:
-        sections = {
-            "SUMMARY": enrich_content(summary, title),
-            "SKILLS": enrich_content(skills, title),
-            "EXPERIENCE": enrich_content(experience, title),
-            "EDUCATION": enrich_content(education, title),
-            "PROJECTS / ACHIEVEMENTS": enrich_content(projects, title)
-        }
+    sections = {
+        "SUMMARY": enrich_content(summary, "Summary", custom_context),
+        "SKILLS": enrich_content(skills, "Skills", custom_context),
+        "EXPERIENCE": enrich_content(experience, "Experience", custom_context),
+        "EDUCATION": enrich_content(education, "Education", custom_context),
+        "PROJECTS / ACHIEVEMENTS": enrich_content(projects, "Projects / Achievements", custom_context),
+    }
 
     for section, content in sections.items():
         pdf.set_font("Helvetica", "B", 13)
@@ -265,7 +153,7 @@ def make_resume_pdf(**kwargs):
             pdf.multi_cell(0, 6, line)
         pdf.ln(3)
 
-    if int(page_count) == 2 and not ("doctor" in title_lower or "surgeon" in title_lower):
+    if int(page_count) == 2:
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 8, "ADDITIONAL ENRICHMENT", ln=1)
@@ -288,12 +176,19 @@ components.html(analytics_code, height=0, width=0)
 # ───────── Sidebar Home Button & Navigation ─────────
 if st.sidebar.button("🏠 Home"):
     st.session_state.page = "Build Resume"
-page = st.sidebar.radio("Navigate", ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"], key="page")
+page = st.sidebar.radio(
+    "Navigate",
+    ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"],
+    key="page"
+)
 
 # ───────── STYLE CUSTOMIZATION ─────────
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Theme & UI Settings")
-theme_choice = st.sidebar.selectbox("Color Theme", ["Light", "Dark", "Midnight Blue", "Emerald Green"])
+theme_choice = st.sidebar.selectbox(
+    "Color Theme",
+    ["Light", "Dark", "Midnight Blue", "Emerald Green"]
+)
 st.session_state.theme = theme_choice
 
 accent_color = st.sidebar.color_picker("Accent Color", "#43ffd8")
@@ -315,21 +210,31 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # ───────── PAGE: BUILD RESUME ─────────
 if page == "Build Resume":
-    st.markdown(f"<h1 style='text-align:center;font-size:3em;font-weight:900'>{APP_NAME}</h1>", unsafe_allow_html=True)
+    st.markdown(
+        f"<h1 style='text-align:center;font-size:3em;font-weight:900'>{APP_NAME}</h1>",
+        unsafe_allow_html=True
+    )
     try:
         from streamlit_lottie import st_lottie
-        st_lottie(load_lottie_animation("https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json"), height=220)
+        st_lottie(
+            load_lottie_animation("https://assets9.lottiefiles.com/packages/lf20_kyu7xb1v.json"),
+            height=220
+        )
     except Exception:
         pass
+
     st.markdown("### 🚀 Build Your Dream Resume With AI")
     st.markdown(
         """
         <div style="text-align:center; margin-top:-10px; margin-bottom:20px;">
-            <span style="background:linear-gradient(to right, #ff416c, #ff4b2b); color:white; padding:10px 24px; border-radius:20px; font-weight:bold; font-size:1.1em;">
+            <span style="background:linear-gradient(to right, #ff416c, #ff4b2b); 
+                         color:white; padding:10px 24px; border-radius:20px; 
+                         font-weight:bold; font-size:1.1em;">
                 🤖 AI Integration Coming Soon – Stay Tuned!
             </span>
         </div>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True
     )
 
     # ─── PRO FEATURE BUY BUTTONS ───
@@ -352,8 +257,11 @@ if page == "Build Resume":
                         )
                         st.session_state.payment_link = session.url
                         st.markdown(
-                            f'<a href="{session.url}" target="_blank" style="color:#fff;background:#2b8cff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700;">Pay</a>',
-                            unsafe_allow_html=True)
+                            f'<a href="{session.url}" target="_blank" '
+                            'style="color:#fff;background:#2b8cff;padding:10px 20px;'
+                            'border-radius:8px;text-decoration:none;font-weight:700;">Pay</a>',
+                            unsafe_allow_html=True
+                        )
                     except Exception as e:
                         st.error(f"Stripe error: {e}")
         st.markdown("---")
@@ -363,11 +271,20 @@ if page == "Build Resume":
         st.markdown(
             f'<div style="text-align:center">'
             f'<a href="{st.session_state.payment_link}" target="_blank">'
-            '<button style="font-size:20px;padding:12px 24px;border-radius:8px;background:linear-gradient(90deg,#2463EB,#5EEAD4);color:#fff;border:none;">Pay Now</button>'
-            '</a></div>', unsafe_allow_html=True
+            '<button style="font-size:20px;padding:12px 24px;'
+            'border-radius:8px;background:linear-gradient(90deg,#2463EB,#5EEAD4);'
+            'color:#fff;border:none;">Pay Now</button>'
+            '</a></div>',
+            unsafe_allow_html=True
         )
         st.info("Once paid, return to this page. Your purchase will unlock unlimited resume generation.")
 
+    st.markdown("---")
+    st.subheader("🛠️ Optional: Provide AI Context")
+    st.write("If you want a specific style or tone, describe it here (e.g., \"Use bullet points, professional tone, highlight leadership\").")
+    custom_context = st.text_area("Additional AI Context (Optional)", "")
+
+    st.markdown("---")
     with st.form("resume_form"):
         col1, col2 = st.columns([2, 1])
         with col1:
@@ -389,10 +306,10 @@ if page == "Build Resume":
 
     if submitted:
         with st.spinner("Generating your resume with AI magic..."):
-            progress = st.progress(0)
+            progress_bar = st.progress(0)
             for i in range(5):
                 time.sleep(0.2)
-                progress.progress((i + 1) * 20)
+                progress_bar.progress((i + 1) * 20)
             if pdf_or_txt == "PDF":
                 pdf = make_resume_pdf()
                 tmpfile = f"/tmp/{name.replace(' ', '_')}_resume.pdf"
