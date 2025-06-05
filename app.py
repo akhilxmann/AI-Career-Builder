@@ -7,14 +7,12 @@ import os
 # Load Stripe key from Streamlit secrets!
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
 
-# Stripe Price IDs (from your dashboard) - Lifetime removed!
+# Stripe Price IDs
 PRICE_IDS = {
     "1 Day Access": "price_1RT9VaGRCFNpMv7GYYUcWP1q",
     "1 Week Access": "price_1RT9ZEGRCFNpMv7GWGWSgk64",
     "1 Month Access": "price_1RTCyOGRCFNpMv7GBwfTCTdT"
 }
-
-SUBSCRIPTION_PLANS = {"1 Day Access", "1 Week Access", "1 Month Access"}
 
 APP_NAME = "AI Career Builder Ultimate"
 OWNER = "Akhil Mann"
@@ -33,10 +31,7 @@ if "payment_link" not in st.session_state:
 def load_lottie_animation(url):
     import requests
     r = requests.get(url)
-    if r.status_code == 200:
-        return r.json()
-    else:
-        return None
+    return r.json() if r.status_code == 200 else None
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -53,16 +48,11 @@ with st.sidebar:
         st.info("Generate 1 resume free. Unlock unlimited resumes + Pro features below.")
         for plan, price_id in PRICE_IDS.items():
             if st.button(f"Buy {plan}"):
-                # All are subscriptions now
-                mode = "subscription"
                 try:
                     session = stripe.checkout.Session.create(
                         payment_method_types=['card'],
-                        line_items=[{
-                            'price': price_id,
-                            'quantity': 1,
-                        }],
-                        mode=mode,
+                        line_items=[{'price': price_id, 'quantity': 1}],
+                        mode="subscription",
                         success_url=DOMAIN + '?success=1',
                         cancel_url=DOMAIN + '?canceled=1',
                     )
@@ -85,7 +75,18 @@ except Exception:
     pass
 st.markdown("### 🚀 Build Your Dream Resume With AI")
 
-# --- PAYMENT LINK BANNER (after click) ---
+# ✅ COMING SOON BADGE
+st.markdown(
+    """
+    <div style="text-align:center; margin-top:-10px; margin-bottom:20px;">
+        <span style="background:linear-gradient(to right, #ff416c, #ff4b2b); color:white; padding:10px 24px; border-radius:20px; font-weight:bold; font-size:1.1em;">
+            🤖 AI Integration Coming Soon – Stay Tuned!
+        </span>
+    </div>
+    """, unsafe_allow_html=True
+)
+
+# --- PAYMENT LINK BANNER ---
 if st.session_state.payment_link:
     st.markdown(
         f'<div style="text-align:center">'
