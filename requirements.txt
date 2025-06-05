@@ -1,5 +1,6 @@
 streamlit
 stripe
 fpdf
-Pillow
-streamlit-lottie
+transformers>=4.0.0
+torch>=1.12.0
+requests
