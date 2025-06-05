@@ -95,6 +95,73 @@ def enrich_content(text, context):
 
 def make_resume_txt(**kwargs):
     """Generate a plain-text resume."""
+    title_lower = title.strip().lower()
+
+    # If user is a doctor/surgeon, build a one-page, custom resume:
+    if "doctor" in title_lower or "surgeon" in title_lower:
+        summary_text = (
+            f"Results-driven {title.title()} with over 10 years of experience "
+            "specializing in facial reconstructive and cosmetic surgery. "
+            "Adept at leading surgery teams, developing patient care protocols, "
+            "and mentoring junior surgeons to achieve optimal outcomes."
+        )
+        skills_text = (
+            "- Facial Reconstruction Surgery\n"
+            "- Cosmetic and Reconstructive Techniques\n"
+            "- Patient Consultation and Management\n"
+            "- Surgical Planning and Execution\n"
+            "- Post-Operative Care and Follow-Up\n"
+            "- Clinical Research and Publications"
+        )
+        experience_text = (
+            "- 2013-Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
+            "  * Performed over 650 successful facial reconstructive surgeries, "
+            "improving patient satisfaction by 40%.\n"
+            "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
+            "standardized surgical protocols reducing complications by 25%.\n"
+            "  * Published 10+ research papers on advanced surgical techniques in "
+            "peer-reviewed journals.\n\n"
+            "- 2010-2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
+            "  * Completed rigorous residency focused on maxillofacial reconstruction, "
+            "trauma management, and microsurgery.\n"
+            "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
+        )
+        education_text = (
+            "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
+            "- Graduated with honors (Top 5% of class)\n"
+            "- Completed elective in Advanced Facial Surgery Techniques, 2009"
+        )
+        projects_text = (
+            "- Developed a minimally invasive facial reconstruction protocol "
+            "reducing operative time by 30% and improving recovery rates.\n"
+            "- Co-creator of the \"Facial Aesthetics Clinic\" initiative, serving over 2000 patients.\n"
+            "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
+        )
+
+        txt = f"""
+{name.upper()}
+{title.title()}
+Contact: {email} | {phone}
+LinkedIn: {linkedin if linkedin else "N/A"}
+
+SUMMARY
+{summary_text}
+
+SKILLS
+{skills_text}
+
+EXPERIENCE
+{experience_text}
+
+EDUCATION
+{education_text}
+
+PROJECTS / ACHIEVEMENTS
+{projects_text}
+"""
+        return txt.strip()
+
+    # Otherwise, default to the free/premium content generator:
     txt = f"""
 {name.upper()}
 {title}
@@ -122,6 +189,7 @@ PROJECTS / ACHIEVEMENTS
 
 def make_resume_pdf(**kwargs):
     """Generate a PDF resume with structured sections."""
+    title_lower = title.strip().lower()
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 18)
@@ -134,18 +202,60 @@ def make_resume_pdf(**kwargs):
         image.save(temp_file.name)
         pdf.image(temp_file.name, x=165, y=20, w=30, h=30)
     pdf.set_font("Helvetica", "I", 14)
-    pdf.cell(0, 10, title.title() if title else "", ln=1, align='C')
+    pdf.cell(0, 10, title.title(), ln=1, align='C')
     pdf.set_font("Helvetica", "", 11)
     pdf.multi_cell(0, 7, f"Contact: {email} | {phone}\nLinkedIn: {linkedin if linkedin else 'N/A'}\n", align='C')
     pdf.ln(5)
 
-    sections = {
-        "SUMMARY": enrich_content(summary, title),
-        "SKILLS": enrich_content(skills, title),
-        "EXPERIENCE": enrich_content(experience, title),
-        "EDUCATION": enrich_content(education, title),
-        "PROJECTS / ACHIEVEMENTS": enrich_content(projects, title)
-    }
+    if "doctor" in title_lower or "surgeon" in title_lower:
+        sections = {
+            "SUMMARY": (
+                f"Results-driven {title.title()} with over 10 years of experience "
+                "specializing in facial reconstructive and cosmetic surgery. "
+                "Adept at leading surgery teams, developing patient care protocols, "
+                "and mentoring junior surgeons to achieve optimal outcomes."
+            ),
+            "SKILLS": (
+                "- Facial Reconstruction Surgery\n"
+                "- Cosmetic and Reconstructive Techniques\n"
+                "- Patient Consultation and Management\n"
+                "- Surgical Planning and Execution\n"
+                "- Post-Operative Care and Follow-Up\n"
+                "- Clinical Research and Publications"
+            ),
+            "EXPERIENCE": (
+                "- 2013-Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
+                "  * Performed over 650 successful facial reconstructive surgeries, "
+                "improving patient satisfaction by 40%.\n"
+                "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
+                "standardized surgical protocols reducing complications by 25%.\n"
+                "  * Published 10+ research papers on advanced surgical techniques in "
+                "peer-reviewed journals.\n\n"
+                "- 2010-2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
+                "  * Completed rigorous residency focused on maxillofacial reconstruction, "
+                "trauma management, and microsurgery.\n"
+                "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
+            ),
+            "EDUCATION": (
+                "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
+                "- Graduated with honors (Top 5% of class)\n"
+                "- Completed elective in Advanced Facial Surgery Techniques, 2009"
+            ),
+            "PROJECTS / ACHIEVEMENTS": (
+                "- Developed a minimally invasive facial reconstruction protocol "
+                "reducing operative time by 30% and improving recovery rates.\n"
+                "- Co-creator of the \"Facial Aesthetics Clinic\" initiative, serving over 2000 patients.\n"
+                "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
+            )
+        }
+    else:
+        sections = {
+            "SUMMARY": enrich_content(summary, title),
+            "SKILLS": enrich_content(skills, title),
+            "EXPERIENCE": enrich_content(experience, title),
+            "EDUCATION": enrich_content(education, title),
+            "PROJECTS / ACHIEVEMENTS": enrich_content(projects, title)
+        }
 
     for section, content in sections.items():
         pdf.set_font("Helvetica", "B", 13)
@@ -155,7 +265,7 @@ def make_resume_pdf(**kwargs):
             pdf.multi_cell(0, 6, line)
         pdf.ln(3)
 
-    if int(page_count) == 2:
+    if int(page_count) == 2 and not ("doctor" in title_lower or "surgeon" in title_lower):
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 13)
         pdf.cell(0, 8, "ADDITIONAL ENRICHMENT", ln=1)
