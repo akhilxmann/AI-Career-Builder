@@ -155,7 +155,7 @@ analytics_code = f"""
 components.html(analytics_code, height=0, width=0)
 
 # ───────── Sidebar Home Button & Navigation ─────────
-st.sidebar.image("https://raw.githubusercontent.com/akulapena/logos/main/logo.png", width=120)  # placeholder logo URL
+# Removed the image line per request—no logo displayed above 'Home' button
 if st.sidebar.button("🏠 Home"):
     st.session_state.page = "Build Resume"
 page = st.sidebar.radio("Navigate", ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"], key="page")
