@@ -96,9 +96,9 @@ def enrich_content(text, context):
 def make_resume_txt(**kwargs):
     """Generate a plain-text resume."""
     title_lower = title.strip().lower()
-    # If user is a doctor/surgeon, create a detailed custom resume
+
+    # If user is a doctor/surgeon, build a one-page, custom resume:
     if "doctor" in title_lower or "surgeon" in title_lower:
-        # Build each section specifically
         summary_text = (
             f"Results-driven {title.title()} with over 10 years of experience "
             "specializing in facial reconstructive and cosmetic surgery. "
@@ -106,37 +106,38 @@ def make_resume_txt(**kwargs):
             "and mentoring junior surgeons to achieve optimal outcomes."
         )
         skills_text = (
-            "• Facial Reconstruction Surgery\n"
-            "• Cosmetic and Reconstructive Techniques\n"
-            "• Patient Consultation and Management\n"
-            "• Surgical Planning and Execution\n"
-            "• Post-Operative Care and Follow-Up\n"
-            "• Clinical Research and Publications"
+            "- Facial Reconstruction Surgery\n"
+            "- Cosmetic and Reconstructive Techniques\n"
+            "- Patient Consultation and Management\n"
+            "- Surgical Planning and Execution\n"
+            "- Post-Operative Care and Follow-Up\n"
+            "- Clinical Research and Publications"
         )
         experience_text = (
-            "• 2013–Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
-            "   - Performed over 650 successful facial reconstructive surgeries, "
+            "- 2013–Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
+            "  * Performed over 650 successful facial reconstructive surgeries, "
             "improving patient satisfaction by 40%.\n"
-            "   - Led a team of 5 junior surgeons and 10 nursing staff, developing "
+            "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
             "standardized surgical protocols reducing complications by 25%.\n"
-            "   - Published 10+ research papers on advanced surgical techniques in "
+            "  * Published 10+ research papers on advanced surgical techniques in "
             "peer-reviewed journals.\n\n"
-            "• 2010–2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
-            "   - Completed rigorous residency focused on maxillofacial reconstruction, "
+            "- 2010–2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
+            "  * Completed rigorous residency focused on maxillofacial reconstruction, "
             "trauma management, and microsurgery.\n"
-            "   - Assisted in 300+ complex surgeries and managed patient follow-up care."
+            "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
         )
         education_text = (
             "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
-            "• Graduated with honors (Top 5% of class)\n"
-            "• Completed elective in Advanced Facial Surgery Techniques, 2009"
+            "- Graduated with honors (Top 5% of class)\n"
+            "- Completed elective in Advanced Facial Surgery Techniques, 2009"
         )
         projects_text = (
-            "• Developed a minimally invasive facial reconstruction protocol reducing "
-            "operative time by 30% and improving recovery rates.\n"
-            "• Co-creator of the “Facial Aesthetics Clinic” initiative, serving over 2000 patients.\n"
-            "• Authored research on 3D-printed surgical guides for precise bone reconstruction."
+            "- Developed a minimally invasive facial reconstruction protocol "
+            "reducing operative time by 30% and improving recovery rates.\n"
+            "- Co-creator of the “Facial Aesthetics Clinic” initiative, serving over 2000 patients.\n"
+            "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
         )
+
         txt = f"""
 {name.upper()}
 {title.title()}
@@ -160,7 +161,7 @@ PROJECTS / ACHIEVEMENTS
 """
         return txt.strip()
 
-    # Otherwise, default behavior
+    # Otherwise, default to the free/premium content generator:
     txt = f"""
 {name.upper()}
 {title}
@@ -207,7 +208,7 @@ def make_resume_pdf(**kwargs):
     pdf.ln(5)
 
     if "doctor" in title_lower or "surgeon" in title_lower:
-        # Custom Doctor resume
+        # Custom Doctor resume – replace all bullets with dashes
         sections = {
             "SUMMARY": (
                 f"Results-driven {title.title()} with over 10 years of experience "
@@ -216,40 +217,40 @@ def make_resume_pdf(**kwargs):
                 "and mentoring junior surgeons to achieve optimal outcomes."
             ),
             "SKILLS": (
-                "• Facial Reconstruction Surgery\n"
-                "• Cosmetic and Reconstructive Techniques\n"
-                "• Patient Consultation and Management\n"
-                "• Surgical Planning and Execution\n"
-                "• Post-Operative Care and Follow-Up\n"
-                "• Clinical Research and Publications"
+                "- Facial Reconstruction Surgery\n"
+                "- Cosmetic and Reconstructive Techniques\n"
+                "- Patient Consultation and Management\n"
+                "- Surgical Planning and Execution\n"
+                "- Post-Operative Care and Follow-Up\n"
+                "- Clinical Research and Publications"
             ),
             "EXPERIENCE": (
-                "• 2013–Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
-                "   - Performed over 650 successful facial reconstructive surgeries, "
+                "- 2013–Present: Senior Face Surgeon, ABC Medical Center, Metropolis, USA\n"
+                "  * Performed over 650 successful facial reconstructive surgeries, "
                 "improving patient satisfaction by 40%.\n"
-                "   - Led a team of 5 junior surgeons and 10 nursing staff, developing "
+                "  * Led a team of 5 junior surgeons and 10 nursing staff, developing "
                 "standardized surgical protocols reducing complications by 25%.\n"
-                "   - Published 10+ research papers on advanced surgical techniques in "
+                "  * Published 10+ research papers on advanced surgical techniques in "
                 "peer-reviewed journals.\n\n"
-                "• 2010–2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
-                "   - Completed rigorous residency focused on maxillofacial reconstruction, "
+                "- 2010–2013: Face Surgery Resident, XYZ University Hospital, Metropolis, USA\n"
+                "  * Completed rigorous residency focused on maxillofacial reconstruction, "
                 "trauma management, and microsurgery.\n"
-                "   - Assisted in 300+ complex surgeries and managed patient follow-up care."
+                "  * Assisted in 300+ complex surgeries and managed patient follow-up care."
             ),
             "EDUCATION": (
                 "Doctor of Medicine (M.D.), EBBS University, College of Medicine, Metropolis, USA, 2010\n"
-                "• Graduated with honors (Top 5% of class)\n"
-                "• Completed elective in Advanced Facial Surgery Techniques, 2009"
+                "- Graduated with honors (Top 5% of class)\n"
+                "- Completed elective in Advanced Facial Surgery Techniques, 2009"
             ),
             "PROJECTS / ACHIEVEMENTS": (
-                "• Developed a minimally invasive facial reconstruction protocol reducing "
-                "operative time by 30% and improving recovery rates.\n"
-                "• Co-creator of the “Facial Aesthetics Clinic” initiative, serving over 2000 patients.\n"
-                "• Authored research on 3D-printed surgical guides for precise bone reconstruction."
+                "- Developed a minimally invasive facial reconstruction protocol "
+                "reducing operative time by 30% and improving recovery rates.\n"
+                "- Co-creator of the “Facial Aesthetics Clinic” initiative, serving over 2000 patients.\n"
+                "- Authored research on 3D-printed surgical guides for precise bone reconstruction."
             )
         }
     else:
-        # Default resume sections
+        # Default resume – ensure no unicode bullets
         sections = {
             "SUMMARY": enrich_content(summary, title),
             "SKILLS": enrich_content(skills, title),
@@ -287,7 +288,6 @@ analytics_code = f"""
 components.html(analytics_code, height=0, width=0)
 
 # ───────── Sidebar Home Button & Navigation ─────────
-# Removed the image line per request—no logo displayed above 'Home' button
 if st.sidebar.button("🏠 Home"):
     st.session_state.page = "Build Resume"
 page = st.sidebar.radio("Navigate", ["Build Resume", "Contact Us", "Chatbot", "Weather", "Subscribe"], key="page")
