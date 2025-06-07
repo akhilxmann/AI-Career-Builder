@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>WeatherSense Updates</title>
+    <link>https://www.akhilmann.shop/</link>
+    <description>Update feed for WeatherSense</description>
+    <language>en</language>
+    <item>
+      <title>Version 1.0</title>
+      <sparkle:releaseNotesLink>https://www.akhilmann.shop/releases/1.0.html</sparkle:releaseNotesLink>
+      <pubDate>Sat, 08 Jun 2025 12:00:00 +0000</pubDate>
+      <enclosure
+        url="https://www.akhilmann.shop/downloads/WeatherSense.dmg"
+        sparkle:version="1.0"
+        sparkle:shortVersionString="1.0"
+        length="88775911"
+        type="application/octet-stream"
+        sparkle:edSignature="0lSnnm+aKxfMtQ5bAc3RVjIiGHLKH9yPAElzX3ooZ3DL5WYXGtoMRoBI3EdY82ZAfZ6aGCfEYn4Ld/U5W8BYBg==" />
+    </item>
+  </channel>
+</rss>
