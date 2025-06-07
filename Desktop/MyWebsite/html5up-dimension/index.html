@@ -1,0 +1,394 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<script defer data-domain="akhilmann.shop" src="https://plausible.io/js/script.js"></script>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MannAI — The Mann Lab</title>
+    <meta name="description" content="MannAI — Futuristic AI Tools, Resume Builder & more by Akhil Mann." />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Main CSS (reuse your html5up-dimension CSS) -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+
+    <!-- AOS (Animate on Scroll) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"/>
+
+    <!-- Particles.js for hero background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #43ffd8;
+            --accent: #4393ff;
+            --dark-bg: #16181d;
+            --light-text: #f0f0f0;
+            --rain-color: rgba(255,255,255,0.25);
+        }
+        body {
+            background: var(--dark-bg);
+            color: var(--light-text);
+            transition: background 0.3s, color 0.3s;
+            font-family: 'Arial', sans-serif;
+            opacity: 0;
+        }
+        a { color: var(--primary); transition: color 0.2s; }
+        a:hover { color: var(--accent); }
+
+        /* ─── Particles & Rain ─── */
+        #particles-js {
+            position: absolute;
+            width: 100%; height: 100vh;
+            top: 0; left: 0; z-index: -1;
+        }
+        .rain {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; overflow: hidden; z-index: 0;
+        }
+        .raindrop {
+            position: absolute; top: -10%;
+            width: 2px; height: 15px;
+            background: var(--rain-color);
+            opacity: 0.5;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(110vh); }
+        }
+
+        /* ─── Header ─── */
+        header {
+            position: fixed; width: 100%; top: 0; left: 0;
+            padding: 1rem 2rem; display: flex;
+            align-items: center; justify-content: space-between;
+            background: rgba(22,24,29,0.8);
+            z-index: 10;
+        }
+        .logo-main {
+            font-weight: 900; font-size: 1.75rem;
+            color: var(--primary); cursor: pointer;
+        }
+        header nav a {
+            margin-left: 1.5rem; font-weight: 500; color: #ddd;
+        }
+        header nav a:hover { color: #fff; }
+
+        /* ─── Hero ─── */
+        .hero {
+            position: relative; display: flex; align-items: center;
+            justify-content: center; height: 100vh; text-align: center;
+            overflow: hidden;
+        }
+        .hero h1 {
+            font-size: 4em; font-weight: 900;
+            color: var(--light-text);
+            text-shadow: 0 0 15px rgba(67,255,216,0.5), 0 0 30px rgba(67,255,216,0.3);
+        }
+        .hero p {
+            font-size: 1.25em; color: #ccc; margin-top: 1rem;
+        }
+        .hero .button {
+            margin-top: 2rem; padding: 0.75rem 2rem;
+            border-radius: 1rem; background: var(--primary);
+            color: #16181d; font-weight: 700; text-decoration: none;
+            box-shadow: 0 2px 18px rgba(67,255,216,0.2);
+            transition: background 0.2s;
+        }
+        .hero .button:hover { background: var(--accent); color: #fff; }
+
+        /* ─── Section Titles ─── */
+        section {
+            padding: 6rem 2rem; position: relative;
+            z-index: 1;
+        }
+        .section-title {
+            text-align: center; font-size: 2.5em;
+            margin-bottom: 2rem; font-weight: 900;
+            color: var(--light-text);
+        }
+
+        /* ─── Projects Grid ─── */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem; max-width: 1000px; margin: 0 auto;
+        }
+        .project-card {
+            background: rgba(25,25,25,0.85);
+            border-radius: 1rem; padding: 1.5rem;
+            text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(67,255,216,0.25);
+        }
+        .project-card img {
+            width: 64px; height: 64px; margin-bottom: 1rem;
+        }
+        .project-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.3;
+            max-width: 100%;
+        }
+        .project-card p {
+            font-size: 0.9em; color: #ccc; margin-bottom: 1rem;
+        }
+        .project-card .button {
+            display: inline-block; padding: 0.5rem 1.5rem;
+            border-radius: 0.75rem; background: var(--accent);
+            color: #16181d; text-decoration: none;
+            font-weight: 600; transition: background 0.2s;
+        }
+        .project-card .button:hover {
+            background: var(--primary);
+        }
+
+        /* ─── AI Tools List ─── */
+        .features-list {
+            max-width: 700px; margin: 0 auto;
+            font-size: 1.05em; line-height: 1.8; color: #ddd;
+        }
+        .features-list li { margin-bottom: 1rem; }
+
+        /* ─── Resume Builder ─── */
+        .resume-plans {
+            display: flex; justify-content: center; flex-wrap: wrap; gap: 2rem;
+        }
+        .plan-card {
+            background: rgba(25,25,25,0.85); border-radius: 1rem;
+            padding: 1.5rem; text-align: center; width: 200px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(67,255,216,0.25);
+        }
+        .plan-card h3 {
+            color: var(--primary); margin-bottom: 0.75rem;
+        }
+        .plan-card .button {
+            padding: 0.5rem 1.5rem; border-radius: 0.75rem;
+            background: var(--accent); color: #16181d;
+            text-decoration: none; font-weight: 600; display: inline-block;
+            transition: background 0.2s;
+        }
+        .plan-card .button:hover {
+            background: var(--primary);
+        }
+
+        /* ─── Contact Form ─── */
+        .contact-form {
+            max-width: 600px; margin: 0 auto; color: #ddd;
+        }
+        .contact-form input,
+        .contact-form textarea {
+            width: 100%; padding: 0.75rem; margin-bottom: 1rem;
+            border: none; border-radius: 0.5rem;
+            background: #2a2a2a; color: #eee; font-size: 1em;
+        }
+        .contact-form button {
+            width: 100%; padding: 0.75rem;
+            border: none; border-radius: 0.75rem;
+            background: var(--primary); color: var(--dark-bg);
+            font-size: 1em; font-weight: 600; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .contact-form button:hover {
+            background: var(--accent);
+        }
+
+        /* ─── Footer ─── */
+        footer {
+            background: #111; text-align: center;
+            padding: 2rem 1rem; color: #777; font-size: 0.9em;
+        }
+        footer a { color: var(--primary); }
+
+        /* Smooth‐scroll behavior */
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body>
+
+    <!-- Particles + Rain Layers -->
+    <div id="particles-js"></div>
+    <div class="rain"></div>
+
+    <!-- Header / Navbar -->
+    <header>
+        <div class="logo-main" onclick="scrollToSection('hero')">Mann<span style="color:var(--primary)">.AI</span></div>
+        <nav>
+            <a href="javascript:void(0)" onclick="scrollToSection('hero')">Home</a>
+            <a href="javascript:void(0)" onclick="scrollToSection('projects')">Projects</a>
+            <a href="javascript:void(0)" onclick="scrollToSection('tools')">AI Tools</a>
+            <a href="javascript:void(0)" onclick="scrollToSection('resume')">Resume Builder</a>
+            <a href="javascript:void(0)" onclick="scrollToSection('contact')">Contact</a>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div data-aos="fade-down">
+            <h1>MannAI</h1>
+            <p data-aos="fade-up" data-aos-delay="200">
+                Futuristic AI Tools, Effortless Productivity.<br>
+                <span style="color:var(--primary)">Powered by Akhil Mann</span>
+            </p>
+            <a href="#projects" class="button" data-aos="zoom-in" data-aos-delay="400">
+                Discover Projects
+            </a>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects">
+        <h2 class="section-title" data-aos="fade-up">Projects</h2>
+        <div class="projects-grid">
+            <!-- WeatherSense -->
+            <div class="project-card" data-aos="fade-up" data-aos-delay="100">
+                <img src="images/icon-weather.png" alt="WeatherSense icon" />
+                <h3>WeatherSense</h3>
+                <p>Create your own weather—perfect for ADHD focus with customizable snow, rain, clouds, and cozy ambiance anywhere on your Mac.</p>
+                <a href="WeatherSense.dmg" download class="button">Download</a>
+            </div>
+            <!-- NotchSense -->
+            <div class="project-card" data-aos="fade-up" data-aos-delay="200">
+                <img src="images/icon-notchnense.png" alt="NotchSense icon" />
+                <h3>NotchSense</h3>
+                <p>Enhance your macOS notch experience with intelligent adaptive UI elements for seamless multitasking.</p>
+                <span class="coming-soon">Coming Soon…</span>
+            </div>
+            <!-- FocusBarPlus -->
+            <div class="project-card" data-aos="fade-up" data-aos-delay="300">
+                <img src="images/icon-focusbarplus.png" alt="FocusBarPlus icon" />
+                <h3>FocusBarPlus</h3>
+                <p>Boost productivity with FocusBarPlus, a minimal timer and focus tracker that keeps you on task.</p>
+                <span class="coming-soon">Coming Soon…</span>
+            </div>
+            <!-- ThermalMindPro -->
+            <div class="project-card" data-aos="fade-up" data-aos-delay="400">
+                <img src="images/icon-thermalmindpro.png" alt="ThermalMindPro icon" />
+                <h3>ThermalMindPro</h3>
+                <p>Analyze performance with ThermalMindPro, a powerful CPU temperature monitoring and optimization tool.</p>
+                <span class="coming-soon">Coming Soon…</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Tools Section -->
+    <section id="tools">
+        <h2 class="section-title" data-aos="fade-up">Powerful AI Tools</h2>
+        <ul class="features-list" data-aos="fade-up" data-aos-delay="200">
+            <li><strong>AI Resume Builder</strong> — Instantly generate world-class resumes with pro layouts and AI-powered context.</li>
+            <li><strong>Portfolio Website Generator</strong> — Launch your developer/designer portfolio in seconds.</li>
+            <li><strong>LinkedIn/Job Matching AI</strong> — Automatically match your profile to top job postings.</li>
+            <li><strong>Auto Cover Letter Writer</strong> — Generate personalized cover letters in one click.</li>
+            <li><strong>Smart Analytics Dashboard</strong> — Visualize your resume metrics, application success rates, and more.</li>
+            <li><strong>…and more coming soon</strong></li>
+        </ul>
+        <div style="text-align:center; margin-top:1.5rem;" data-aos="fade-up" data-aos-delay="400">
+            <a href="#resume" class="button">Try AI Resume Builder</a>
+        </div>
+    </section>
+
+    <!-- Resume Builder Section -->
+    <section id="resume">
+        <h2 class="section-title" data-aos="fade-up">Resume Builder</h2>
+        <div style="max-width:800px; margin:0 auto;" data-aos="fade-up" data-aos-delay="200">
+            <p style="text-align:center; color:#ccc; margin-bottom:2rem;">
+                Generate your dream resume with cutting-edge AI. First resume is free—unlock unlimited resumes with a pro pass.
+            </p>
+            <div class="resume-plans">
+                <div class="plan-card" data-aos="fade-up" data-aos-delay="300">
+                    <h3>1 Day Access</h3>
+                    <a href="#" class="button">Buy 1 Day</a>
+                </div>
+                <div class="plan-card" data-aos="fade-up" data-aos-delay="400">
+                    <h3>1 Week Access</h3>
+                    <a href="#" class="button">Buy 1 Week</a>
+                </div>
+                <div class="plan-card" data-aos="fade-up" data-aos-delay="500">
+                    <h3>1 Month Access</h3>
+                    <a href="#" class="button">Buy 1 Month</a>
+                </div>
+            </div>
+            <p style="text-align:center; color:#aaa; margin-top:1rem; font-size:0.9em;">
+                Already have a pass? Click below to create your AI-powered resume now.
+            </p>
+            <div style="text-align:center; margin-top:1rem;" data-aos="fade-up" data-aos-delay="600">
+                <a href="https://ai-career-builder-4404.streamlit.app" target="_blank" class="button" style="background:var(--accent); color:#16181d;">
+                    Generate Resume Now →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact">
+        <h2 class="section-title" data-aos="fade-up">Contact & Chat Support</h2>
+        <div class="contact-form" data-aos="fade-up" data-aos-delay="200">
+            <form method="POST" action="mailto:werttreat@gmail.com" enctype="text/plain">
+                <input type="text" name="name" placeholder="Your Name" required />
+                <input type="email" name="email" placeholder="Your Email" required />
+                <textarea name="message" rows="5" placeholder="Your Message..." required></textarea>
+                <button type="submit">Send Message</button>
+            </form>
+            <p style="text-align:center; margin-top:1.5rem; color:#bbb;">
+                Or email us directly: <a href="mailto:werttreat@gmail.com">werttreat@gmail.com</a>
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 MannAI. The Mann Lab. Designed by Akhil Mann.</p>
+        <p><a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        AOS.init({ once: true, duration: 800 });
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ffffff" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.2 },
+                "size": { "value": 3 },
+                "line_linked": { "enable": false },
+                "move": { "enable": true, "speed": 2, "out_mode": "out" }
+            },
+            "interactivity": { "events": { "onhover": { "enable": false } }},
+            "retina_detect": true
+        });
+        function createRain() {
+            const rainContainer = document.querySelector('.rain');
+            const dropCount = Math.floor(window.innerWidth / 4);
+            for (let i = 0; i < dropCount; i++) {
+                const drop = document.createElement('div');
+                drop.classList.add('raindrop');
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+                drop.style.opacity = (Math.random() * 0.5 + 0.2);
+                rainContainer.appendChild(drop);
+            }
+        }
+        createRain();
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '1';
+        });
+    </script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
